@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela\" && npm create vite@latest client -- --template react-ts 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela\" && npm install 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npm install && npm install socket.io-client 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/server\" && npm install 2>&1)",
+      "Bash(curl -s http://localhost:3001 2>&1 | head -5)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npx tsc --noEmit 2>&1 | head -30)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npx vite build 2>&1 | tail -10)",
+      "Bash(pkill -f \"tsx.*index.ts\" 2>/dev/null; echo \"done\")",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela\" && npm run dev)",
+      "Bash(netstat -ano | grep :3001 | grep LISTEN)",
+      "Bash(taskkill //PID 15784 //F)",
+      "Bash(kill -9 15784 2>/dev/null; sleep 1 && echo \"done\")",
+      "Bash(cmd.exe //C \"taskkill /PID 15784 /F\" 2>&1)",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 15784 -Force\" 2>&1)",
+      "Bash(sleep 1 && netstat -ano | grep :3001 | grep LISTEN)",
+      "Bash(which gh:*)"
+    ]
+  }
+}
