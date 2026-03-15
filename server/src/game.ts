@@ -51,7 +51,7 @@ export interface Room {
 const rooms = new Map<string, Room>();
 
 function generateRoomCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   let code: string;
   do {
     code = '';
