@@ -21,9 +21,18 @@ const io = new Server(httpServer, {
 });
 
 const ROUND_TIME = 60; // seconds
+const DISCONNECT_GRACE_PERIOD = 30_000; // 30 seconds to reconnect
 
-// Track which room each socket is in
-const socketRooms = new Map<string, string>();
+// Map playerId -> { roomCode, socketId }
+const playerSessions = new Map<string, { roomCode: string; socketId: string }>();
+// Map socketId -> playerId
+const socketToPlayer = new Map<string, string>();
+// Track pending disconnects so we can cancel them
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function getPlayerId(socketId: string): string | undefined {
+  return socketToPlayer.get(socketId);
+}
 
 function endRound(room: Room) {
   if (room.timer) {
@@ -54,41 +63,86 @@ function endRound(room: Room) {
 }
 
 io.on('connection', (socket) => {
-  console.log(`Player connected: ${socket.id}`);
+  console.log(`Socket connected: ${socket.id}`);
 
-  socket.on('create-room', ({ playerName }: { playerName: string }, callback) => {
-    const room = createRoom(socket.id, playerName);
+  socket.on('create-room', ({ playerName, playerId }: { playerName: string; playerId: string }, callback) => {
+    const room = createRoom(playerId, playerName);
     socket.join(room.code);
-    socketRooms.set(socket.id, room.code);
-    callback({ success: true, room: serializeRoom(room) });
+    playerSessions.set(playerId, { roomCode: room.code, socketId: socket.id });
+    socketToPlayer.set(socket.id, playerId);
+    callback({ success: true, room: serializeRoom(room), playerId });
   });
 
-  socket.on('join-room', ({ roomCode, playerName }: { roomCode: string; playerName: string }, callback) => {
-    const room = joinRoom(roomCode, socket.id, playerName);
+  socket.on('join-room', ({ roomCode, playerName, playerId }: { roomCode: string; playerName: string; playerId: string }, callback) => {
+    const room = joinRoom(roomCode, playerId, playerName);
     if (!room) {
       callback({ success: false, error: 'Room not found, full, or game already started.' });
       return;
     }
     socket.join(room.code);
-    socketRooms.set(socket.id, room.code);
-    callback({ success: true, room: serializeRoom(room) });
+    playerSessions.set(playerId, { roomCode: room.code, socketId: socket.id });
+    socketToPlayer.set(socket.id, playerId);
+    callback({ success: true, room: serializeRoom(room), playerId });
     socket.to(room.code).emit('room-updated', serializeRoom(room));
   });
 
+  socket.on('rejoin-room', ({ roomCode, playerId }: { roomCode: string; playerId: string }, callback) => {
+    const room = getRoom(roomCode);
+    if (!room || !room.players.has(playerId)) {
+      callback({ success: false, error: 'Room not found or you are no longer in it.' });
+      return;
+    }
+
+    // Cancel pending disconnect removal
+    const timer = disconnectTimers.get(playerId);
+    if (timer) {
+      clearTimeout(timer);
+      disconnectTimers.delete(playerId);
+    }
+
+    // Update socket mappings
+    const oldSession = playerSessions.get(playerId);
+    if (oldSession) {
+      socketToPlayer.delete(oldSession.socketId);
+    }
+    playerSessions.set(playerId, { roomCode: room.code, socketId: socket.id });
+    socketToPlayer.set(socket.id, playerId);
+    socket.join(room.code);
+
+    // Send current room state and last round result if available
+    const lastResult = room.roundResults.length > 0 ? room.roundResults[room.roundResults.length - 1] : null;
+    const gameOver = room.phase === 'finished';
+    const timeElapsed = room.phase === 'playing' ? Math.floor((Date.now() - room.roundStartTime) / 1000) : 0;
+    const timeRemaining = room.phase === 'playing' ? Math.max(0, ROUND_TIME - timeElapsed) : 0;
+
+    callback({
+      success: true,
+      room: serializeRoom(room),
+      playerId,
+      roundResult: lastResult,
+      gameOver,
+      timeRemaining,
+    });
+  });
+
   socket.on('update-settings', ({ language, totalRounds }: { language: Language; totalRounds: number }) => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = updateSettings(roomCode, language, totalRounds);
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = updateSettings(session.roomCode, language, totalRounds);
     if (room) {
       io.to(room.code).emit('room-updated', serializeRoom(room));
     }
   });
 
   socket.on('start-game', () => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = getRoom(roomCode);
-    if (!room || room.hostId !== socket.id) return;
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room || room.hostId !== playerId) return;
 
     const letter = startRound(room);
     io.to(room.code).emit('round-started', {
@@ -99,21 +153,22 @@ io.on('connection', (socket) => {
       duration: ROUND_TIME,
     });
 
-    // Start timer
     room.timer = setTimeout(() => {
       endRound(room);
     }, ROUND_TIME * 1000);
   });
 
   socket.on('submit-answers', ({ answers }: { answers: Record<Category, string> }) => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = getRoom(roomCode);
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
     if (!room) return;
 
-    submitAnswers(room, socket.id, answers);
+    submitAnswers(room, playerId, answers);
     io.to(room.code).emit('player-submitted', {
-      playerId: socket.id,
+      playerId,
       submittedCount: room.submittedPlayers.size,
       totalPlayers: room.players.size,
     });
@@ -124,13 +179,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('stop-round', () => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = getRoom(roomCode);
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
     if (!room || room.phase !== 'playing') return;
 
-    // Notify everyone the round is being stopped, give 3 seconds
-    io.to(room.code).emit('round-stopping', { stoppedBy: socket.id });
+    io.to(room.code).emit('round-stopping', { stoppedBy: playerId });
 
     setTimeout(() => {
       if (room.phase === 'playing') {
@@ -140,10 +196,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('next-round', () => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = getRoom(roomCode);
-    if (!room || room.hostId !== socket.id) return;
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room || room.hostId !== playerId) return;
 
     const letter = startRound(room);
     io.to(room.code).emit('round-started', {
@@ -160,29 +218,49 @@ io.on('connection', (socket) => {
   });
 
   socket.on('play-again', () => {
-    const roomCode = socketRooms.get(socket.id);
-    if (!roomCode) return;
-    const room = getRoom(roomCode);
-    if (!room || room.hostId !== socket.id) return;
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room || room.hostId !== playerId) return;
 
     resetGame(room);
     io.to(room.code).emit('room-updated', serializeRoom(room));
   });
 
   socket.on('disconnect', () => {
-    const roomCode = socketRooms.get(socket.id);
-    if (roomCode) {
-      const room = removePlayer(roomCode, socket.id);
-      socketRooms.delete(socket.id);
-      if (room) {
-        io.to(room.code).emit('room-updated', serializeRoom(room));
-        // If during playing and all remaining players submitted, end round
-        if (room.phase === 'playing' && allPlayersSubmitted(room)) {
-          endRound(room);
-        }
-      }
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) {
+      console.log(`Unknown socket disconnected: ${socket.id}`);
+      return;
     }
-    console.log(`Player disconnected: ${socket.id}`);
+
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+
+    console.log(`Player ${playerId} disconnected, waiting ${DISCONNECT_GRACE_PERIOD / 1000}s for reconnect...`);
+
+    // Give the player time to reconnect before removing them
+    const timer = setTimeout(() => {
+      disconnectTimers.delete(playerId);
+      const currentSession = playerSessions.get(playerId);
+      // Only remove if they haven't reconnected with a new socket
+      if (currentSession && currentSession.socketId === socket.id) {
+        const room = removePlayer(session.roomCode, playerId);
+        playerSessions.delete(playerId);
+        socketToPlayer.delete(socket.id);
+        if (room) {
+          io.to(room.code).emit('room-updated', serializeRoom(room));
+          if (room.phase === 'playing' && allPlayersSubmitted(room)) {
+            endRound(room);
+          }
+        }
+        console.log(`Player ${playerId} removed after grace period.`);
+      }
+    }, DISCONNECT_GRACE_PERIOD);
+
+    disconnectTimers.set(playerId, timer);
   });
 });
 

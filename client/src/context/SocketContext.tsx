@@ -11,6 +11,31 @@ export function useSocket() {
   return socket;
 }
 
+// Generate or retrieve a persistent player ID
+export function getPlayerId(): string {
+  let id = sessionStorage.getItem('playerId');
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem('playerId', id);
+  }
+  return id;
+}
+
+export function getSessionInfo(): { roomCode: string; playerId: string } | null {
+  const roomCode = sessionStorage.getItem('roomCode');
+  const playerId = sessionStorage.getItem('playerId');
+  if (roomCode && playerId) return { roomCode, playerId };
+  return null;
+}
+
+export function saveSession(roomCode: string) {
+  sessionStorage.setItem('roomCode', roomCode);
+}
+
+export function clearSession() {
+  sessionStorage.removeItem('roomCode');
+}
+
 export function SocketProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
 

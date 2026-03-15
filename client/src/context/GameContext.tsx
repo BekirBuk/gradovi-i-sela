@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useSocket } from './SocketContext';
+import { useSocket, getPlayerId, getSessionInfo, saveSession, clearSession } from './SocketContext';
 
 export interface Player {
   id: string;
@@ -70,10 +70,57 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [allResults, setAllResults] = useState<RoundResult[]>([]);
+  const [myId] = useState(() => getPlayerId());
+
+  // Attempt to rejoin on connect/reconnect
+  useEffect(() => {
+    function tryRejoin() {
+      const session = getSessionInfo();
+      if (!session) return;
+
+      socket.emit('rejoin-room', { roomCode: session.roomCode, playerId: session.playerId },
+        (res: { success: boolean; room?: RoomState; roundResult?: RoundResult; gameOver?: boolean; timeRemaining?: number; error?: string }) => {
+          if (res.success && res.room) {
+            setRoom(res.room);
+            setTotalPlayers(res.room.players.length);
+            setSubmittedCount(res.room.submittedCount);
+            if (res.roundResult) {
+              setRoundResult(res.roundResult);
+            }
+            if (res.gameOver !== undefined) {
+              setGameOver(res.gameOver);
+            }
+            if (res.timeRemaining && res.timeRemaining > 0) {
+              setTimeLeft(res.timeRemaining);
+            }
+          } else {
+            // Session expired, clear it
+            clearSession();
+          }
+        }
+      );
+    }
+
+    // Try to rejoin when socket connects
+    if (socket.connected) {
+      tryRejoin();
+    }
+    socket.on('connect', tryRejoin);
+
+    return () => {
+      socket.off('connect', tryRejoin);
+    };
+  }, [socket]);
 
   useEffect(() => {
     socket.on('room-updated', (roomData: RoomState) => {
       setRoom(roomData);
+      if (roomData.phase === 'lobby') {
+        // Game was reset
+        setRoundResult(null);
+        setGameOver(false);
+        setAllResults([]);
+      }
     });
 
     socket.on('round-started', (data: { letter: string; round: number; totalRounds: number; room: RoomState; duration: number }) => {
@@ -130,31 +177,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const createRoomFn = useCallback((name: string): Promise<RoomState> => {
     return new Promise((resolve, reject) => {
-      socket.emit('create-room', { playerName: name }, (res: { success: boolean; room?: RoomState; error?: string }) => {
+      socket.emit('create-room', { playerName: name, playerId: myId }, (res: { success: boolean; room?: RoomState; error?: string }) => {
         if (res.success && res.room) {
           setRoom(res.room);
           setAllResults([]);
+          saveSession(res.room.code);
           resolve(res.room);
         } else {
           reject(new Error(res.error || 'Failed to create room'));
         }
       });
     });
-  }, [socket]);
+  }, [socket, myId]);
 
   const joinRoomFn = useCallback((code: string, name: string): Promise<RoomState> => {
     return new Promise((resolve, reject) => {
-      socket.emit('join-room', { roomCode: code, playerName: name }, (res: { success: boolean; room?: RoomState; error?: string }) => {
+      socket.emit('join-room', { roomCode: code, playerName: name, playerId: myId }, (res: { success: boolean; room?: RoomState; error?: string }) => {
         if (res.success && res.room) {
           setRoom(res.room);
           setAllResults([]);
+          saveSession(res.room.code);
           resolve(res.room);
         } else {
           reject(new Error(res.error || 'Failed to join room'));
         }
       });
     });
-  }, [socket]);
+  }, [socket, myId]);
 
   const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number) => {
     socket.emit('update-settings', { language, totalRounds });
@@ -201,7 +250,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       stopRound: stopRoundFn,
       nextRound: nextRoundFn,
       playAgain: playAgainFn,
-      myId: socket.id || '',
+      myId,
     }}>
       {children}
     </GameContext.Provider>
