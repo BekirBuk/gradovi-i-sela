@@ -1,10 +1,11 @@
 import { useGame } from '../context/GameContext';
+import { t } from '../i18n';
 
 const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
 
 export default function Scoreboard() {
   const {
-    room, roundResult, gameOver, nextRound, playAgain, myId,
+    room, roundResult, gameOver, nextRound, playAgain, myId, lang,
     challengeAnswer, voteChallenge, activeChallenge, resolvedChallenges
   } = useGame();
 
@@ -27,7 +28,7 @@ export default function Scoreboard() {
     if (!r || r.valid || !r.answer.trim()) return false;
     if (isChallenged(playerId, cat)) return false;
     if (isBeingChallenged(playerId, cat)) return false;
-    if (activeChallenge) return false; // one at a time
+    if (activeChallenge) return false;
     return true;
   }
 
@@ -35,24 +36,21 @@ export default function Scoreboard() {
     && !activeChallenge.resolved
     && !(myId in activeChallenge.votes);
 
-  const playerName = (id: string) => room.players.find(p => p.id === id)?.name || 'Unknown';
+  const playerName = (id: string) => room.players.find(p => p.id === id)?.name || '?';
 
   return (
     <div className="scoreboard">
       <h2>
         {gameOver
-          ? 'Final Results'
-          : `Round ${room.currentRound} Results - Letter "${roundResult.letter.toUpperCase()}"`
+          ? t(lang, 'finalResults')
+          : t(lang, 'roundResults', { round: String(room.currentRound), letter: roundResult.letter.toUpperCase() })
         }
       </h2>
 
-      {/* Active challenge voting banner */}
       {activeChallenge && !activeChallenge.resolved && (
         <div className="challenge-banner">
           <p className="challenge-text">
-            <strong>{playerName(activeChallenge.playerId)}</strong> claims
-            "<strong>{activeChallenge.answer}</strong>" is a valid
-            <strong> {labels[activeChallenge.category] || activeChallenge.category}</strong>.
+            <strong>{playerName(activeChallenge.playerId)}</strong> {t(lang, 'claims')} "<strong>{activeChallenge.answer}</strong>" {t(lang, 'isAValid')} <strong>{labels[activeChallenge.category] || activeChallenge.category}</strong>.
           </p>
           {needsMyVote ? (
             <div className="challenge-actions">
@@ -60,18 +58,18 @@ export default function Scoreboard() {
                 className="btn btn-primary"
                 onClick={() => voteChallenge(activeChallenge.id, true)}
               >
-                Accept
+                {t(lang, 'accept')}
               </button>
               <button
                 className="btn btn-danger"
                 onClick={() => voteChallenge(activeChallenge.id, false)}
               >
-                Reject
+                {t(lang, 'reject')}
               </button>
             </div>
           ) : (
             <p className="challenge-waiting">
-              Waiting for votes... ({Object.keys(activeChallenge.votes).length}/{room.players.length})
+              {t(lang, 'waitingForVotes')} ({Object.keys(activeChallenge.votes).length}/{room.players.length})
             </p>
           )}
         </div>
@@ -85,7 +83,7 @@ export default function Scoreboard() {
               {CATEGORY_ORDER.map(cat => (
                 <th key={cat}>{labels[cat] || cat}</th>
               ))}
-              <th>Round</th>
+              <th>{t(lang, 'round')}</th>
               <th>Total</th>
             </tr>
           </thead>
@@ -113,16 +111,16 @@ export default function Scoreboard() {
                           <button
                             className="btn-challenge"
                             onClick={() => challengeAnswer(player.id, cat)}
-                            title="Challenge this answer"
+                            title="Challenge"
                           >
                             ?
                           </button>
                         )}
                         {challenged && wasAccepted && (
-                          <span className="challenge-badge accepted">Accepted</span>
+                          <span className="challenge-badge accepted">{t(lang, 'accepted')}</span>
                         )}
                         {challenged && !wasAccepted && (
-                          <span className="challenge-badge rejected">Rejected</span>
+                          <span className="challenge-badge rejected">{t(lang, 'rejected')}</span>
                         )}
                       </td>
                     );
@@ -138,13 +136,13 @@ export default function Scoreboard() {
 
       {gameOver && (
         <div className="final-ranking">
-          <h3>Rankings</h3>
+          <h3>{t(lang, 'rankings')}</h3>
           <div className="ranking-list">
             {sortedPlayers.map((p, i) => (
               <div key={p.id} className={`ranking-item rank-${i + 1}`}>
                 <span className="rank">#{i + 1}</span>
                 <span className="name">{p.name}</span>
-                <span className="total">{p.totalScore} pts</span>
+                <span className="total">{p.totalScore} {t(lang, 'pts')}</span>
               </div>
             ))}
           </div>
@@ -155,11 +153,11 @@ export default function Scoreboard() {
         <div className="scoreboard-actions">
           {!gameOver ? (
             <button className="btn btn-primary btn-large" onClick={nextRound} disabled={!!activeChallenge}>
-              Next Round
+              {t(lang, 'nextRound')}
             </button>
           ) : (
             <button className="btn btn-primary btn-large" onClick={playAgain} disabled={!!activeChallenge}>
-              Play Again
+              {t(lang, 'playAgain')}
             </button>
           )}
         </div>
@@ -167,7 +165,7 @@ export default function Scoreboard() {
 
       {!isHost && (
         <p className="waiting-text">
-          {gameOver ? 'Waiting for host...' : 'Waiting for host to start next round...'}
+          {gameOver ? t(lang, 'waitingForHost') : t(lang, 'waitingForNextRound')}
         </p>
       )}
     </div>

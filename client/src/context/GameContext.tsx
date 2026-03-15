@@ -53,6 +53,8 @@ interface GameState {
   allResults: RoundResult[];
   activeChallenge: ChallengeState | null;
   resolvedChallenges: ChallengeState[];
+  lang: 'en' | 'bs';
+  setLang: (lang: 'en' | 'bs') => void;
   createRoom: (name: string) => Promise<RoomState>;
   joinRoom: (code: string, name: string) => Promise<RoomState>;
   updateSettings: (language: 'en' | 'bs', totalRounds: number) => void;
@@ -83,6 +85,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [lang, setLang] = useState<'en' | 'bs'>('bs');
   const [allResults, setAllResults] = useState<RoundResult[]>([]);
   const [activeChallenge, setActiveChallenge] = useState<ChallengeState | null>(null);
   const [resolvedChallenges, setResolvedChallenges] = useState<ChallengeState[]>([]);
@@ -98,6 +101,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         (res: { success: boolean; room?: RoomState; roundResult?: RoundResult; gameOver?: boolean; timeRemaining?: number; error?: string }) => {
           if (res.success && res.room) {
             setRoom(res.room);
+            setLang(res.room.language);
             setTotalPlayers(res.room.players.length);
             setSubmittedCount(res.room.submittedCount);
             if (res.roundResult) {
@@ -129,6 +133,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     socket.on('room-updated', (roomData: RoomState) => {
       setRoom(roomData);
+      setLang(roomData.language);
       if (roomData.phase === 'lobby') {
         setRoundResult(null);
         setGameOver(false);
@@ -292,6 +297,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       allResults,
       activeChallenge,
       resolvedChallenges,
+      lang,
+      setLang,
       createRoom: createRoomFn,
       joinRoom: joinRoomFn,
       updateSettings: updateSettingsFn,

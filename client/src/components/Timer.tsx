@@ -1,7 +1,8 @@
 import { useGame } from '../context/GameContext';
+import { t } from '../i18n';
 
 export default function Timer() {
-  const { timeLeft, roundStopping } = useGame();
+  const { timeLeft, roundStopping, lang } = useGame();
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -10,7 +11,7 @@ export default function Timer() {
   return (
     <div className={`timer ${urgent ? 'timer-urgent' : ''} ${roundStopping ? 'timer-stopping' : ''}`}>
       {roundStopping ? (
-        <span className="timer-text">STOP! Locking answers...</span>
+        <span className="timer-text">{t(lang, 'lockingAnswers')}</span>
       ) : (
         <span className="timer-text">
           {minutes}:{seconds.toString().padStart(2, '0')}

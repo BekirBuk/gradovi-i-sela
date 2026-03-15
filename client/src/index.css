@@ -284,6 +284,38 @@ select option {
   margin-bottom: 8px;
 }
 
+.lobby-lang-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+
+.lang-btn {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.lang-btn.active {
+  background: var(--ink);
+  color: var(--bg-card);
+}
+
+.lang-btn:hover:not(.active) {
+  color: var(--ink);
+}
+
 .lobby-coordinates {
   font-family: var(--font-sans);
   font-size: 0.75rem;

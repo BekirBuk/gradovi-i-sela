@@ -1,21 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import { t } from '../i18n';
 import Timer from './Timer';
 
 const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
 
 const CATEGORY_ICONS: Record<string, string> = {
-  countries: '\u{1F3F3}',  // flag
-  cities: '\u{1F3DB}',     // classical building
-  rivers: '\u{1F30A}',     // wave
-  mountains: '\u{26F0}',   // mountain
-  animals: '\u{1F43E}',    // paw prints
-  plants: '\u{1F33F}',     // herb
-  names: '\u{270D}',       // writing hand
+  countries: '\u{1F3F3}',
+  cities: '\u{1F3DB}',
+  rivers: '\u{1F30A}',
+  mountains: '\u{26F0}',
+  animals: '\u{1F43E}',
+  plants: '\u{1F33F}',
+  names: '\u{270D}',
 };
 
 export default function GameBoard() {
-  const { room, submitAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping } = useGame();
+  const { room, submitAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping, lang } = useGame();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -66,12 +67,12 @@ export default function GameBoard() {
     <div className="game-board">
       <div className="game-header">
         <div className="round-info">
-          <span className="round-label">Round</span>
+          <span className="round-label">{t(lang, 'round')}</span>
           <span className="round-number">{room.currentRound}/{room.totalRounds}</span>
         </div>
         <Timer />
         <div className="submitted-info">
-          {submittedCount}/{totalPlayers} submitted
+          {submittedCount}/{totalPlayers} {t(lang, 'submitted')}
         </div>
       </div>
 
@@ -106,15 +107,15 @@ export default function GameBoard() {
       <div className="game-actions">
         {!submitted ? (
           <button className="btn btn-primary" onClick={handleSubmit} disabled={disabled}>
-            Submit Answers
+            {t(lang, 'submitAnswers')}
           </button>
         ) : (
-          <p className="submitted-text">Answers submitted! Waiting for others...</p>
+          <p className="submitted-text">{t(lang, 'answersSubmitted')}</p>
         )}
 
         {allFilled && !roundStopping && timeLeft > 0 && (
           <button className="btn btn-stop" onClick={handleStop}>
-            STOP!
+            {t(lang, 'stop')}
           </button>
         )}
       </div>

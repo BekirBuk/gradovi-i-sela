@@ -1,26 +1,22 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { t } from '../i18n';
 
 const CompassRose = () => (
   <svg className="compass-rose" viewBox="0 0 200 200" width="120" height="120">
     <g transform="translate(100,100)">
-      {/* Outer ring */}
       <circle r="90" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
       <circle r="80" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
-      {/* Cardinal points */}
       <polygon points="0,-85 6,-30 -6,-30" fill="currentColor" opacity="0.7" />
       <polygon points="0,85 6,30 -6,30" fill="currentColor" opacity="0.25" />
       <polygon points="-85,0 -30,6 -30,-6" fill="currentColor" opacity="0.25" />
       <polygon points="85,0 30,6 30,-6" fill="currentColor" opacity="0.25" />
-      {/* Intercardinal points */}
       <polygon points="-60,-60 -15,-22 -22,-15" fill="currentColor" opacity="0.15" />
       <polygon points="60,-60 15,-22 22,-15" fill="currentColor" opacity="0.15" />
       <polygon points="-60,60 -15,22 -22,15" fill="currentColor" opacity="0.15" />
       <polygon points="60,60 15,22 22,15" fill="currentColor" opacity="0.15" />
-      {/* Center */}
       <circle r="4" fill="currentColor" opacity="0.4" />
       <circle r="2" fill="currentColor" opacity="0.7" />
-      {/* Letters */}
       <text y="-68" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.5" fontFamily="'Playfair Display', serif">N</text>
       <text y="78" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.3" fontFamily="'Playfair Display', serif">S</text>
       <text x="-70" y="5" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.3" fontFamily="'Playfair Display', serif">W</text>
@@ -30,7 +26,7 @@ const CompassRose = () => (
 );
 
 export default function Lobby() {
-  const { room, createRoom, joinRoom, updateSettings, startGame, myId } = useGame();
+  const { room, createRoom, joinRoom, updateSettings, startGame, myId, lang, setLang } = useGame();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -39,7 +35,7 @@ export default function Lobby() {
   const isHost = room?.hostId === myId;
 
   async function handleCreate() {
-    if (!name.trim()) { setError('Enter your name'); return; }
+    if (!name.trim()) { setError(t(lang, 'enterName')); return; }
     try {
       await createRoom(name.trim());
       setError('');
@@ -49,8 +45,8 @@ export default function Lobby() {
   }
 
   async function handleJoin() {
-    if (!name.trim()) { setError('Enter your name'); return; }
-    if (!joinCode.trim()) { setError('Enter room code'); return; }
+    if (!name.trim()) { setError(t(lang, 'enterName')); return; }
+    if (!joinCode.trim()) { setError(t(lang, 'enterRoomCode')); return; }
     try {
       await joinRoom(joinCode.trim().toUpperCase(), name.trim());
       setError('');
@@ -64,41 +60,45 @@ export default function Lobby() {
       <div className="lobby">
         <div className="lobby-header">
           <CompassRose />
-          <h1>Gradovi i Sela</h1>
+          <h1>{t(lang, 'appTitle')}</h1>
         </div>
         <div className="room-info">
           <div className="room-code">
-            <span className="label">Room Code</span>
+            <span className="label">{t(lang, 'roomCode')}</span>
             <span className="code">{room.code}</span>
           </div>
         </div>
 
         <div className="players-list">
-          <h3>Explorers ({room.players.length})</h3>
+          <h3>{t(lang, 'explorers')} ({room.players.length})</h3>
           {room.players.map(p => (
             <div key={p.id} className={`player-item ${p.id === room.hostId ? 'host' : ''}`}>
               <span className="player-icon">&#9873;</span>
-              {p.name} {p.id === room.hostId && <span className="host-badge">HOST</span>}
-              {p.id === myId && <span className="you-badge">YOU</span>}
+              {p.name} {p.id === room.hostId && <span className="host-badge">{t(lang, 'host')}</span>}
+              {p.id === myId && <span className="you-badge">{t(lang, 'you')}</span>}
             </div>
           ))}
         </div>
 
         {isHost && (
           <div className="settings">
-            <h3>Expedition Settings</h3>
+            <h3>{t(lang, 'expeditionSettings')}</h3>
             <div className="setting-row">
-              <label>Language</label>
+              <label>{t(lang, 'language')}</label>
               <select
                 value={room.language}
-                onChange={e => updateSettings(e.target.value as 'en' | 'bs', room.totalRounds)}
+                onChange={e => {
+                  const newLang = e.target.value as 'en' | 'bs';
+                  setLang(newLang);
+                  updateSettings(newLang, room.totalRounds);
+                }}
               >
                 <option value="bs">Bosanski</option>
                 <option value="en">English</option>
               </select>
             </div>
             <div className="setting-row">
-              <label>Rounds</label>
+              <label>{t(lang, 'rounds')}</label>
               <select
                 value={room.totalRounds}
                 onChange={e => updateSettings(room.language, parseInt(e.target.value))}
@@ -109,13 +109,13 @@ export default function Lobby() {
               </select>
             </div>
             <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1}>
-              Begin Expedition
+              {t(lang, 'beginExpedition')}
             </button>
           </div>
         )}
 
         {!isHost && (
-          <p className="waiting-text">Waiting for the expedition leader...</p>
+          <p className="waiting-text">{t(lang, 'waitingForLeader')}</p>
         )}
       </div>
     );
@@ -126,19 +126,33 @@ export default function Lobby() {
       <div className="lobby">
         <div className="lobby-header">
           <CompassRose />
-          <h1>Gradovi i Sela</h1>
-          <p className="subtitle">A Geography Challenge</p>
+          <h1>{t(lang, 'appTitle')}</h1>
+          <p className="subtitle">{t(lang, 'subtitle')}</p>
+        </div>
+        <div className="lobby-lang-toggle">
+          <button
+            className={`lang-btn ${lang === 'bs' ? 'active' : ''}`}
+            onClick={() => setLang('bs')}
+          >
+            BS
+          </button>
+          <button
+            className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
+            onClick={() => setLang('en')}
+          >
+            EN
+          </button>
         </div>
         <div className="menu-buttons">
           <button className="btn btn-primary btn-large" onClick={() => setView('create')}>
-            Create Room
+            {t(lang, 'createRoom')}
           </button>
           <button className="btn btn-secondary btn-large" onClick={() => setView('join')}>
-            Join Room
+            {t(lang, 'joinRoom')}
           </button>
         </div>
         <div className="lobby-coordinates">
-          43.8563&deg;N &middot; 18.4131&deg;E
+          {t(lang, 'coordinates')}
         </div>
       </div>
     );
@@ -147,14 +161,14 @@ export default function Lobby() {
   return (
     <div className="lobby">
       <div className="lobby-header">
-        <h1>Gradovi i Sela</h1>
+        <h1>{t(lang, 'appTitle')}</h1>
       </div>
-      <button className="btn-back" onClick={() => { setView('menu'); setError(''); }}>&larr; Back</button>
+      <button className="btn-back" onClick={() => { setView('menu'); setError(''); }}>{t(lang, 'back')}</button>
 
       <div className="form">
         <input
           type="text"
-          placeholder="Explorer name"
+          placeholder={t(lang, 'explorerName')}
           value={name}
           onChange={e => setName(e.target.value)}
           maxLength={20}
@@ -164,7 +178,7 @@ export default function Lobby() {
         {view === 'join' && (
           <input
             type="text"
-            placeholder="Room code"
+            placeholder={t(lang, 'roomCode')}
             value={joinCode}
             onChange={e => setJoinCode(e.target.value.toUpperCase())}
             maxLength={4}
@@ -178,7 +192,7 @@ export default function Lobby() {
           className="btn btn-primary btn-large"
           onClick={view === 'create' ? handleCreate : handleJoin}
         >
-          {view === 'create' ? 'Create' : 'Join'}
+          {view === 'create' ? t(lang, 'create') : t(lang, 'join')}
         </button>
       </div>
     </div>
