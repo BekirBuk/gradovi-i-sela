@@ -89,7 +89,7 @@ export function validateAnswer(answer: string, category: Category, letter: strin
 export function getValidLetters(lang: Language): string[] {
   const allLetters = lang === 'bs'
     ? 'abcdefghijklmnoprsštuvz'.split('')
-    : 'abcdefghijklmnoprstuv'.split('');
+    : 'abcdefghijklmnoprstuvz'.split('');
 
   return allLetters.filter(letter => {
     const normalizedLetter = normalize(letter);
