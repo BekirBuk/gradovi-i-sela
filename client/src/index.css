@@ -554,19 +554,13 @@ select option {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 0 20px 0 40px;
+  padding: 0 20px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
 .form-margin-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 36px;
-  width: 1px;
-  background: var(--danger);
-  opacity: 0.2;
+  display: none;
 }
 
 .category-row {
@@ -590,8 +584,8 @@ select option {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-muted);
-  text-align: right;
-  justify-content: flex-end;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .cat-icon {
@@ -1012,11 +1006,7 @@ select option {
   }
 
   .categories-form {
-    padding: 0 16px 0 32px;
-  }
-
-  .form-margin-line {
-    left: 28px;
+    padding: 0 16px;
   }
 
   .category-row {
