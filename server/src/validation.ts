@@ -88,8 +88,8 @@ export function validateAnswer(answer: string, category: Category, letter: strin
 // Get letters that have at least some valid answers across categories
 export function getValidLetters(lang: Language): string[] {
   const allLetters = lang === 'bs'
-    ? 'abcčćdđefghijklmnoprsštuvzž'.split('')
-    : 'abcdefghijklmnoprstuvw'.split('');
+    ? 'abcdefghijklmnoprsštuvz'.split('')
+    : 'abcdefghijklmnoprstuv'.split('');
 
   return allLetters.filter(letter => {
     const normalizedLetter = normalize(letter);
