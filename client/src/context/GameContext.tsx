@@ -32,6 +32,16 @@ export interface RoomState {
   categoryLabels: Record<string, string>;
 }
 
+export interface ChallengeState {
+  id: string;
+  playerId: string;
+  category: string;
+  answer: string;
+  votes: Record<string, boolean>;
+  resolved: boolean;
+  accepted: boolean;
+}
+
 interface GameState {
   room: RoomState | null;
   roundResult: RoundResult | null;
@@ -41,6 +51,8 @@ interface GameState {
   totalPlayers: number;
   gameOver: boolean;
   allResults: RoundResult[];
+  activeChallenge: ChallengeState | null;
+  resolvedChallenges: ChallengeState[];
   createRoom: (name: string) => Promise<RoomState>;
   joinRoom: (code: string, name: string) => Promise<RoomState>;
   updateSettings: (language: 'en' | 'bs', totalRounds: number) => void;
@@ -49,6 +61,8 @@ interface GameState {
   stopRound: () => void;
   nextRound: () => void;
   playAgain: () => void;
+  challengeAnswer: (playerId: string, category: string) => void;
+  voteChallenge: (challengeId: string, accept: boolean) => void;
   myId: string;
 }
 
@@ -70,6 +84,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [allResults, setAllResults] = useState<RoundResult[]>([]);
+  const [activeChallenge, setActiveChallenge] = useState<ChallengeState | null>(null);
+  const [resolvedChallenges, setResolvedChallenges] = useState<ChallengeState[]>([]);
   const [myId] = useState(() => getPlayerId());
 
   // Attempt to rejoin on connect/reconnect
@@ -94,14 +110,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
               setTimeLeft(res.timeRemaining);
             }
           } else {
-            // Session expired, clear it
             clearSession();
           }
         }
       );
     }
 
-    // Try to rejoin when socket connects
     if (socket.connected) {
       tryRejoin();
     }
@@ -116,10 +130,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket.on('room-updated', (roomData: RoomState) => {
       setRoom(roomData);
       if (roomData.phase === 'lobby') {
-        // Game was reset
         setRoundResult(null);
         setGameOver(false);
         setAllResults([]);
+        setActiveChallenge(null);
+        setResolvedChallenges([]);
       }
     });
 
@@ -131,6 +146,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setTotalPlayers(data.room.players.length);
       setTimeLeft(data.duration);
       setGameOver(false);
+      setActiveChallenge(null);
+      setResolvedChallenges([]);
     });
 
     socket.on('player-submitted', (data: { submittedCount: number; totalPlayers: number }) => {
@@ -151,12 +168,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setRoundStopping(false);
     });
 
+    socket.on('challenge-started', (challenge: ChallengeState) => {
+      setActiveChallenge(challenge);
+    });
+
+    socket.on('challenge-voted', (data: { challengeId: string; voterId: string; voteCount: number; totalPlayers: number }) => {
+      setActiveChallenge(prev => {
+        if (!prev || prev.id !== data.challengeId) return prev;
+        return { ...prev, votes: { ...prev.votes, [data.voterId]: true } };
+      });
+    });
+
+    socket.on('challenge-resolved', (data: { challenge: ChallengeState; result: RoundResult; room: RoomState }) => {
+      setActiveChallenge(null);
+      setResolvedChallenges(prev => [...prev, data.challenge]);
+      setRoundResult(data.result);
+      setRoom(data.room);
+    });
+
     return () => {
       socket.off('room-updated');
       socket.off('round-started');
       socket.off('player-submitted');
       socket.off('round-stopping');
       socket.off('round-results');
+      socket.off('challenge-started');
+      socket.off('challenge-voted');
+      socket.off('challenge-resolved');
     };
   }, [socket]);
 
@@ -229,7 +267,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setAllResults([]);
     setGameOver(false);
     setRoundResult(null);
+    setActiveChallenge(null);
+    setResolvedChallenges([]);
     socket.emit('play-again');
+  }, [socket]);
+
+  const challengeAnswerFn = useCallback((playerIdTarget: string, category: string) => {
+    socket.emit('challenge-answer', { playerIdTarget, category });
+  }, [socket]);
+
+  const voteChallengeFn = useCallback((challengeId: string, accept: boolean) => {
+    socket.emit('vote-challenge', { challengeId, accept });
   }, [socket]);
 
   return (
@@ -242,6 +290,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       totalPlayers,
       gameOver,
       allResults,
+      activeChallenge,
+      resolvedChallenges,
       createRoom: createRoomFn,
       joinRoom: joinRoomFn,
       updateSettings: updateSettingsFn,
@@ -250,6 +300,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       stopRound: stopRoundFn,
       nextRound: nextRoundFn,
       playAgain: playAgainFn,
+      challengeAnswer: challengeAnswerFn,
+      voteChallenge: voteChallengeFn,
       myId,
     }}>
       {children}

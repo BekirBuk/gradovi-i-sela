@@ -6,7 +6,8 @@ import { loadWordLists, CATEGORIES, Category, Language } from './validation';
 import {
   createRoom, getRoom, joinRoom, removePlayer, updateSettings,
   startRound, submitAnswers, allPlayersSubmitted, scoreRound,
-  isGameOver, finishGame, resetGame, serializeRoom, Room
+  isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
+  createChallenge, voteChallenge, Room
 } from './game';
 
 const app = express();
@@ -215,6 +216,65 @@ io.on('connection', (socket) => {
     room.timer = setTimeout(() => {
       endRound(room);
     }, ROUND_TIME * 1000);
+  });
+
+  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: Category }) => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room) return;
+
+    // Get the answer from the last round result
+    const lastResult = room.roundResults[room.roundResults.length - 1];
+    if (!lastResult) return;
+    const answerData = lastResult.answers[playerIdTarget]?.[category];
+    if (!answerData || answerData.valid) return; // Can only challenge invalid answers
+
+    const challenge = createChallenge(room, playerIdTarget, category as Category, answerData.answer);
+    if (!challenge) return;
+
+    // Auto-resolve if only 1 player in the room (solo testing)
+    if (room.players.size === 1) {
+      voteChallenge(room, challenge.id, playerId, true);
+      io.to(room.code).emit('challenge-resolved', {
+        challenge: serializeChallenge(challenge),
+        result: lastResult,
+        room: serializeRoom(room),
+      });
+      return;
+    }
+
+    io.to(room.code).emit('challenge-started', serializeChallenge(challenge));
+  });
+
+  socket.on('vote-challenge', ({ challengeId, accept }: { challengeId: string; accept: boolean }) => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room) return;
+
+    const challenge = voteChallenge(room, challengeId, playerId, accept);
+    if (!challenge) return;
+
+    if (challenge.resolved) {
+      const lastResult = room.roundResults[room.roundResults.length - 1];
+      io.to(room.code).emit('challenge-resolved', {
+        challenge: serializeChallenge(challenge),
+        result: lastResult,
+        room: serializeRoom(room),
+      });
+    } else {
+      io.to(room.code).emit('challenge-voted', {
+        challengeId: challenge.id,
+        voterId: playerId,
+        voteCount: challenge.votes.size,
+        totalPlayers: room.players.size,
+      });
+    }
   });
 
   socket.on('play-again', () => {

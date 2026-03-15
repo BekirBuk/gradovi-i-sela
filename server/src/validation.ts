@@ -85,6 +85,24 @@ export function validateAnswer(answer: string, category: Category, letter: strin
   return normalizedWordLists[lang][category].has(normalizedAnswer);
 }
 
+// Add a word to the word list (in memory + persist to disk)
+export function addWord(word: string, category: Category, lang: Language): void {
+  const lower = word.toLowerCase().trim();
+  const norm = normalize(lower);
+  wordLists[lang][category].add(lower);
+  normalizedWordLists[lang][category].add(norm);
+
+  // Persist to disk
+  const filePath = path.join(__dirname, 'data', lang, `${category}.json`);
+  try {
+    const arr = Array.from(wordLists[lang][category]).sort();
+    fs.writeFileSync(filePath, JSON.stringify(arr, null, 2), 'utf-8');
+    console.log(`Added "${lower}" to ${lang}/${category}`);
+  } catch (e) {
+    console.warn(`Warning: Could not persist word to ${filePath}`);
+  }
+}
+
 // Get letters that have at least some valid answers across categories
 export function getValidLetters(lang: Language): string[] {
   const allLetters = lang === 'bs'

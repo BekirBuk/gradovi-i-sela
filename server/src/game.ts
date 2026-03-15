@@ -1,4 +1,4 @@
-import { validateAnswer, getValidLetters, CATEGORIES, getCategoryLabels, Category, Language } from './validation';
+import { validateAnswer, addWord, getValidLetters, CATEGORIES, getCategoryLabels, Category, Language } from './validation';
 
 export interface Player {
   id: string;
@@ -20,6 +20,16 @@ export interface RoundResult {
   scores: { [playerId: string]: number };
 }
 
+export interface Challenge {
+  id: string;
+  playerId: string;
+  category: Category;
+  answer: string;
+  votes: Map<string, boolean>; // playerId -> accepted
+  resolved: boolean;
+  accepted: boolean;
+}
+
 export interface Room {
   code: string;
   hostId: string;
@@ -35,6 +45,7 @@ export interface Room {
   usedLetters: Set<string>;
   timer: ReturnType<typeof setTimeout> | null;
   roundStartTime: number;
+  activeChallenges: Map<string, Challenge>;
 }
 
 const rooms = new Map<string, Room>();
@@ -68,6 +79,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     usedLetters: new Set(),
     timer: null,
     roundStartTime: 0,
+    activeChallenges: new Map(),
   };
   rooms.set(code, room);
   return room;
@@ -130,6 +142,7 @@ export function startRound(room: Room): string {
   room.phase = 'playing';
   room.roundAnswers = {};
   room.submittedPlayers = new Set();
+  room.activeChallenges = new Map();
   room.currentLetter = pickLetter(room);
   room.roundStartTime = Date.now();
   return room.currentLetter;
@@ -219,6 +232,128 @@ export function scoreRound(room: Room): RoundResult {
   return result;
 }
 
+export function createChallenge(room: Room, playerId: string, category: Category, answer: string): Challenge | null {
+  if (room.phase !== 'scoring' && room.phase !== 'finished') return null;
+
+  const id = `${playerId}-${category}`;
+  if (room.activeChallenges.has(id)) return null;
+
+  const challenge: Challenge = {
+    id,
+    playerId,
+    category,
+    answer,
+    votes: new Map(),
+    resolved: false,
+    accepted: false,
+  };
+
+  // The challenger automatically votes yes
+  challenge.votes.set(playerId, true);
+
+  room.activeChallenges.set(id, challenge);
+  return challenge;
+}
+
+export function voteChallenge(room: Room, challengeId: string, voterId: string, accept: boolean): Challenge | null {
+  const challenge = room.activeChallenges.get(challengeId);
+  if (!challenge || challenge.resolved) return null;
+
+  challenge.votes.set(voterId, accept);
+
+  // Check if all players have voted
+  if (challenge.votes.size >= room.players.size) {
+    challenge.resolved = true;
+    challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
+
+    if (challenge.accepted) {
+      // Add word to word list
+      addWord(challenge.answer, challenge.category, room.language);
+      // Recalculate the current round result
+      recalculateLastRound(room);
+    }
+  }
+
+  return challenge;
+}
+
+function recalculateLastRound(room: Room): void {
+  const result = room.roundResults[room.roundResults.length - 1];
+  if (!result) return;
+
+  const playerIds = Array.from(room.players.keys());
+
+  // Reset player total scores by subtracting old round scores
+  for (const pid of playerIds) {
+    const player = room.players.get(pid);
+    if (player && result.scores[pid] !== undefined) {
+      player.totalScore -= result.scores[pid];
+    }
+  }
+
+  // Recalculate with duplicate detection
+  const answersByCategory: Record<string, Map<string, string[]>> = {};
+  for (const cat of CATEGORIES) {
+    answersByCategory[cat] = new Map();
+    for (const pid of playerIds) {
+      const answer = room.roundAnswers[pid]?.[cat] || '';
+      if (answer.trim()) {
+        const normalized = answer.toLowerCase().trim();
+        if (!answersByCategory[cat].has(normalized)) {
+          answersByCategory[cat].set(normalized, []);
+        }
+        answersByCategory[cat].get(normalized)!.push(pid);
+      }
+    }
+  }
+
+  for (const pid of playerIds) {
+    result.scores[pid] = 0;
+    for (const cat of CATEGORIES) {
+      const answer = room.roundAnswers[pid]?.[cat] || '';
+      const valid = validateAnswer(answer, cat, result.letter, room.language);
+
+      let points = 0;
+      if (valid) {
+        let validAnswerCount = 0;
+        for (const otherId of playerIds) {
+          const otherAnswer = room.roundAnswers[otherId]?.[cat] || '';
+          if (validateAnswer(otherAnswer, cat, result.letter, room.language)) {
+            validAnswerCount++;
+          }
+        }
+        if (validAnswerCount === 1) {
+          points = 20;
+        } else {
+          const normalized = answer.toLowerCase().trim();
+          const playersWithSame = answersByCategory[cat].get(normalized) || [];
+          points = playersWithSame.length > 1 ? 5 : 10;
+        }
+      }
+
+      result.answers[pid][cat] = { answer, valid, points };
+      result.scores[pid] += points;
+    }
+
+    const player = room.players.get(pid);
+    if (player) {
+      player.totalScore += result.scores[pid];
+    }
+  }
+}
+
+export function serializeChallenge(challenge: Challenge) {
+  return {
+    id: challenge.id,
+    playerId: challenge.playerId,
+    category: challenge.category,
+    answer: challenge.answer,
+    votes: Object.fromEntries(challenge.votes),
+    resolved: challenge.resolved,
+    accepted: challenge.accepted,
+  };
+}
+
 export function isGameOver(room: Room): boolean {
   return room.currentRound >= room.totalRounds;
 }
@@ -234,6 +369,7 @@ export function resetGame(room: Room): void {
   room.usedLetters = new Set();
   room.roundAnswers = {};
   room.submittedPlayers = new Set();
+  room.activeChallenges = new Map();
   for (const player of room.players.values()) {
     player.totalScore = 0;
   }

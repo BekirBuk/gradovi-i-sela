@@ -627,6 +627,92 @@ select option {
   max-width: 320px;
 }
 
+/* Challenge system */
+.challenge-banner {
+  width: 100%;
+  background: var(--bg-card);
+  border: 2px solid var(--warning);
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.challenge-text {
+  color: var(--text-h);
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.challenge-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.challenge-actions .btn {
+  min-width: 100px;
+}
+
+.challenge-waiting {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.btn-challenge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--warning);
+  background: rgba(243, 156, 18, 0.15);
+  color: var(--warning);
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-left: 4px;
+  padding: 0;
+  vertical-align: middle;
+  transition: all 0.2s;
+}
+
+.btn-challenge:hover {
+  background: rgba(243, 156, 18, 0.3);
+  transform: scale(1.1);
+}
+
+.answer.challenge-accepted .answer-text {
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.answer.challenge-accepted .answer-points {
+  color: var(--success);
+}
+
+.challenge-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.challenge-badge.accepted {
+  background: rgba(46, 204, 113, 0.2);
+  color: var(--success);
+}
+
+.challenge-badge.rejected {
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--danger);
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .lobby h1 {
