@@ -1,6 +1,34 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 
+const CompassRose = () => (
+  <svg className="compass-rose" viewBox="0 0 200 200" width="120" height="120">
+    <g transform="translate(100,100)">
+      {/* Outer ring */}
+      <circle r="90" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
+      <circle r="80" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
+      {/* Cardinal points */}
+      <polygon points="0,-85 6,-30 -6,-30" fill="currentColor" opacity="0.7" />
+      <polygon points="0,85 6,30 -6,30" fill="currentColor" opacity="0.25" />
+      <polygon points="-85,0 -30,6 -30,-6" fill="currentColor" opacity="0.25" />
+      <polygon points="85,0 30,6 30,-6" fill="currentColor" opacity="0.25" />
+      {/* Intercardinal points */}
+      <polygon points="-60,-60 -15,-22 -22,-15" fill="currentColor" opacity="0.15" />
+      <polygon points="60,-60 15,-22 22,-15" fill="currentColor" opacity="0.15" />
+      <polygon points="-60,60 -15,22 -22,15" fill="currentColor" opacity="0.15" />
+      <polygon points="60,60 15,22 22,15" fill="currentColor" opacity="0.15" />
+      {/* Center */}
+      <circle r="4" fill="currentColor" opacity="0.4" />
+      <circle r="2" fill="currentColor" opacity="0.7" />
+      {/* Letters */}
+      <text y="-68" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.5" fontFamily="'Playfair Display', serif">N</text>
+      <text y="78" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.3" fontFamily="'Playfair Display', serif">S</text>
+      <text x="-70" y="5" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.3" fontFamily="'Playfair Display', serif">W</text>
+      <text x="70" y="5" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor" opacity="0.3" fontFamily="'Playfair Display', serif">E</text>
+    </g>
+  </svg>
+);
+
 export default function Lobby() {
   const { room, createRoom, joinRoom, updateSettings, startGame, myId } = useGame();
   const [name, setName] = useState('');
@@ -31,11 +59,13 @@ export default function Lobby() {
     }
   }
 
-  // Already in a room - show lobby
   if (room) {
     return (
       <div className="lobby">
-        <h1>Gradovi i Sela</h1>
+        <div className="lobby-header">
+          <CompassRose />
+          <h1>Gradovi i Sela</h1>
+        </div>
         <div className="room-info">
           <div className="room-code">
             <span className="label">Room Code</span>
@@ -44,9 +74,10 @@ export default function Lobby() {
         </div>
 
         <div className="players-list">
-          <h3>Players ({room.players.length})</h3>
+          <h3>Explorers ({room.players.length})</h3>
           {room.players.map(p => (
             <div key={p.id} className={`player-item ${p.id === room.hostId ? 'host' : ''}`}>
+              <span className="player-icon">&#9873;</span>
               {p.name} {p.id === room.hostId && <span className="host-badge">HOST</span>}
               {p.id === myId && <span className="you-badge">YOU</span>}
             </div>
@@ -55,7 +86,7 @@ export default function Lobby() {
 
         {isHost && (
           <div className="settings">
-            <h3>Settings</h3>
+            <h3>Expedition Settings</h3>
             <div className="setting-row">
               <label>Language</label>
               <select
@@ -78,24 +109,26 @@ export default function Lobby() {
               </select>
             </div>
             <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1}>
-              Start Game
+              Begin Expedition
             </button>
           </div>
         )}
 
         {!isHost && (
-          <p className="waiting-text">Waiting for host to start the game...</p>
+          <p className="waiting-text">Waiting for the expedition leader...</p>
         )}
       </div>
     );
   }
 
-  // Not in a room - show menu
   if (view === 'menu') {
     return (
       <div className="lobby">
-        <h1>Gradovi i Sela</h1>
-        <p className="subtitle">The Categories Game</p>
+        <div className="lobby-header">
+          <CompassRose />
+          <h1>Gradovi i Sela</h1>
+          <p className="subtitle">A Geography Challenge</p>
+        </div>
         <div className="menu-buttons">
           <button className="btn btn-primary btn-large" onClick={() => setView('create')}>
             Create Room
@@ -104,19 +137,24 @@ export default function Lobby() {
             Join Room
           </button>
         </div>
+        <div className="lobby-coordinates">
+          43.8563&deg;N &middot; 18.4131&deg;E
+        </div>
       </div>
     );
   }
 
   return (
     <div className="lobby">
-      <h1>Gradovi i Sela</h1>
-      <button className="btn-back" onClick={() => { setView('menu'); setError(''); }}>Back</button>
+      <div className="lobby-header">
+        <h1>Gradovi i Sela</h1>
+      </div>
+      <button className="btn-back" onClick={() => { setView('menu'); setError(''); }}>&larr; Back</button>
 
       <div className="form">
         <input
           type="text"
-          placeholder="Your name"
+          placeholder="Explorer name"
           value={name}
           onChange={e => setName(e.target.value)}
           maxLength={20}

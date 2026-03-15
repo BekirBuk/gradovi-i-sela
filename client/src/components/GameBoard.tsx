@@ -4,13 +4,22 @@ import Timer from './Timer';
 
 const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
 
+const CATEGORY_ICONS: Record<string, string> = {
+  countries: '\u{1F3F3}',  // flag
+  cities: '\u{1F3DB}',     // classical building
+  rivers: '\u{1F30A}',     // wave
+  mountains: '\u{26F0}',   // mountain
+  animals: '\u{1F43E}',    // paw prints
+  plants: '\u{1F33F}',     // herb
+  names: '\u{270D}',       // writing hand
+};
+
 export default function GameBoard() {
   const { room, submitAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping } = useGame();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Reset answers when a new round starts
   useEffect(() => {
     setAnswers({});
     setSubmitted(false);
@@ -32,7 +41,6 @@ export default function GameBoard() {
   }
 
   function handleStop() {
-    // Submit current answers first, then stop
     if (!submitted) {
       setSubmitted(true);
       submitAnswers(answers);
@@ -58,7 +66,8 @@ export default function GameBoard() {
     <div className="game-board">
       <div className="game-header">
         <div className="round-info">
-          Round {room.currentRound} / {room.totalRounds}
+          <span className="round-label">Round</span>
+          <span className="round-number">{room.currentRound}/{room.totalRounds}</span>
         </div>
         <Timer />
         <div className="submitted-info">
@@ -67,13 +76,19 @@ export default function GameBoard() {
       </div>
 
       <div className="letter-display">
-        <span className="letter">{room.currentLetter.toUpperCase()}</span>
+        <div className="letter-frame">
+          <span className="letter">{room.currentLetter.toUpperCase()}</span>
+        </div>
       </div>
 
       <div className="categories-form">
+        <div className="form-margin-line" />
         {CATEGORY_ORDER.map((cat, i) => (
           <div key={cat} className="category-row">
-            <label>{labels[cat] || cat}</label>
+            <label>
+              <span className="cat-icon">{CATEGORY_ICONS[cat]}</span>
+              {labels[cat] || cat}
+            </label>
             <input
               ref={el => { inputRefs.current[i] = el; }}
               type="text"
@@ -98,7 +113,7 @@ export default function GameBoard() {
         )}
 
         {allFilled && !roundStopping && timeLeft > 0 && (
-          <button className="btn btn-danger" onClick={handleStop}>
+          <button className="btn btn-stop" onClick={handleStop}>
             STOP!
           </button>
         )}
