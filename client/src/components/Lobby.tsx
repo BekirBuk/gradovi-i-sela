@@ -31,6 +31,7 @@ export default function Lobby() {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [view, setView] = useState<'menu' | 'create' | 'join'>('menu');
+  const [tooltip, setTooltip] = useState<string | null>(null);
 
   const isHost = room?.hostId === myId;
 
@@ -84,7 +85,10 @@ export default function Lobby() {
           <div className="settings">
             <h3>{t(lang, 'expeditionSettings')}</h3>
             <div className="setting-row">
-              <label>{t(lang, 'rounds')}</label>
+              <label>
+                {t(lang, 'rounds')}
+                <span className="setting-tooltip-trigger" onClick={() => setTooltip(tooltip === 'rounds' ? null : 'rounds')}>?</span>
+              </label>
               <select
                 value={room.totalRounds}
                 onChange={e => updateSettings(room.language, parseInt(e.target.value), room.roundTime)}
@@ -93,9 +97,13 @@ export default function Lobby() {
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
+              {tooltip === 'rounds' && <div className="setting-tooltip">{t(lang, 'roundsTooltip')}</div>}
             </div>
             <div className="setting-row">
-              <label>{t(lang, 'roundTime')}</label>
+              <label>
+                {t(lang, 'roundTime')}
+                <span className="setting-tooltip-trigger" onClick={() => setTooltip(tooltip === 'roundTime' ? null : 'roundTime')}>?</span>
+              </label>
               <select
                 value={room.roundTime}
                 onChange={e => updateSettings(room.language, room.totalRounds, parseInt(e.target.value), room.gameMode)}
@@ -104,9 +112,13 @@ export default function Lobby() {
                   <option key={s} value={s}>{Math.floor(s / 60)}:{(s % 60).toString().padStart(2, '0')}</option>
                 ))}
               </select>
+              {tooltip === 'roundTime' && <div className="setting-tooltip">{t(lang, 'roundTimeTooltip')}</div>}
             </div>
             <div className="setting-row">
-              <label>{t(lang, 'gameMode')}</label>
+              <label>
+                {t(lang, 'gameMode')}
+                <span className="setting-tooltip-trigger" onClick={() => setTooltip(tooltip === 'gameMode' ? null : 'gameMode')}>?</span>
+              </label>
               <select
                 value={room.gameMode}
                 onChange={e => updateSettings(room.language, room.totalRounds, room.roundTime, e.target.value as 'timer' | 'stop')}
@@ -114,6 +126,7 @@ export default function Lobby() {
                 <option value="stop">{t(lang, 'gameModeStop')}</option>
                 <option value="timer">{t(lang, 'gameModeTimer')}</option>
               </select>
+              {tooltip === 'gameMode' && <div className="setting-tooltip">{t(lang, 'gameModeTooltip')}</div>}
             </div>
             <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1}>
               {t(lang, 'beginExpedition')}

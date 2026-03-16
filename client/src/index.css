@@ -470,6 +470,8 @@ select option {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
 }
 
 .setting-row label {
@@ -477,10 +479,49 @@ select option {
   font-size: 0.95rem;
   color: var(--text-muted);
   font-family: var(--font-serif);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .setting-row select {
   flex: 1;
+}
+
+.setting-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.setting-tooltip-trigger:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.setting-tooltip {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: -4px;
+  line-height: 1.4;
 }
 
 .waiting-text {

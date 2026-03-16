@@ -24,6 +24,9 @@ const translations = {
     gameMode: 'Game Mode',
     gameModeTimer: 'Timer',
     gameModeStop: 'Stop',
+    roundsTooltip: 'Number of rounds to play before the game ends.',
+    roundTimeTooltip: 'How long each round lasts before time runs out.',
+    gameModeTooltip: 'Stop: players can end the round early. Timer: round only ends when time runs out.',
     beginExpedition: 'Begin Expedition',
     waitingForLeader: 'Waiting for the expedition leader...',
 
@@ -82,6 +85,9 @@ const translations = {
     gameMode: 'Mod Igre',
     gameModeTimer: 'Tajmer',
     gameModeStop: 'Stop',
+    roundsTooltip: 'Broj rundi prije kraja igre.',
+    roundTimeTooltip: 'Koliko dugo traje svaka runda.',
+    gameModeTooltip: 'Stop: igrači mogu završiti rundu ranije. Tajmer: runda završava samo kad istekne vrijeme.',
     beginExpedition: 'Započni Igru',
     waitingForLeader: 'Čekamo domaćina da započne igru...',
 
