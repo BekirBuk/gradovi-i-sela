@@ -63,6 +63,7 @@ interface GameState {
   updateSettings: (language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop') => void;
   startGame: () => void;
   submitAnswers: (answers: Record<string, string>) => void;
+  saveAnswers: (answers: Record<string, string>) => void;
   stopRound: () => void;
   nextRound: () => void;
   playAgain: () => void;
@@ -286,6 +287,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket.emit('submit-answers', { answers });
   }, [socket]);
 
+  const saveAnswersFn = useCallback((answers: Record<string, string>) => {
+    socket.emit('save-answers', { answers });
+  }, [socket]);
+
   const stopRoundFn = useCallback(() => {
     socket.emit('stop-round');
   }, [socket]);
@@ -333,6 +338,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       updateSettings: updateSettingsFn,
       startGame: startGameFn,
       submitAnswers: submitAnswersFn,
+      saveAnswers: saveAnswersFn,
       stopRound: stopRoundFn,
       nextRound: nextRoundFn,
       playAgain: playAgainFn,

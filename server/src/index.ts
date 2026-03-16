@@ -159,6 +159,18 @@ io.on('connection', (socket) => {
     }, room.roundTime * 1000);
   });
 
+  socket.on('save-answers', ({ answers }: { answers: Record<Category, string> }) => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room || room.phase !== 'playing') return;
+    if (room.submittedPlayers.has(playerId)) return;
+    // Save draft answers without marking as submitted
+    room.roundAnswers[playerId] = answers;
+  });
+
   socket.on('submit-answers', ({ answers }: { answers: Record<Category, string> }) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) return;

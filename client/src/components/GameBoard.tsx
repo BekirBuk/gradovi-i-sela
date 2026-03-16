@@ -16,10 +16,14 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function GameBoard() {
-  const { room, submitAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping, lang } = useGame();
+  const { room, submitAnswers, saveAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping, lang } = useGame();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const submittedRef = useRef(submitted);
+  submittedRef.current = submitted;
 
   useEffect(() => {
     setAnswers({});
@@ -27,12 +31,22 @@ export default function GameBoard() {
     inputRefs.current[0]?.focus();
   }, [room?.currentRound, room?.currentLetter]);
 
+  // Auto-submit when timer runs out or round is stopping
+  useEffect(() => {
+    if ((timeLeft === 0 || roundStopping) && !submittedRef.current) {
+      setSubmitted(true);
+      submitAnswers(answersRef.current);
+    }
+  }, [timeLeft, roundStopping, submitAnswers]);
+
   if (!room) return null;
 
   const labels = room.categoryLabels;
 
   function handleChange(cat: string, value: string) {
-    setAnswers(prev => ({ ...prev, [cat]: value }));
+    const updated = { ...answers, [cat]: value };
+    setAnswers(updated);
+    saveAnswers(updated);
   }
 
   function handleSubmit() {
