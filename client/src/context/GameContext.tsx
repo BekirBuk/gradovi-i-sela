@@ -55,6 +55,8 @@ interface GameState {
   resolvedChallenges: ChallengeState[];
   lang: 'en' | 'bs';
   setLang: (lang: 'en' | 'bs') => void;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
   createRoom: (name: string) => Promise<RoomState>;
   joinRoom: (code: string, name: string) => Promise<RoomState>;
   leaveRoom: () => void;
@@ -87,6 +89,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [lang, setLang] = useState<'en' | 'bs'>('bs');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(t => t === 'light' ? 'dark' : 'light');
+  }, []);
   const [allResults, setAllResults] = useState<RoundResult[]>([]);
   const [activeChallenge, setActiveChallenge] = useState<ChallengeState | null>(null);
   const [resolvedChallenges, setResolvedChallenges] = useState<ChallengeState[]>([]);
@@ -310,6 +325,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       resolvedChallenges,
       lang,
       setLang,
+      theme,
+      toggleTheme,
       createRoom: createRoomFn,
       joinRoom: joinRoomFn,
       leaveRoom: leaveRoomFn,

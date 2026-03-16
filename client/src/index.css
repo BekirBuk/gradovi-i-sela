@@ -50,6 +50,38 @@
   background: var(--bg);
 }
 
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --bg-card: #22223a;
+  --bg-input: #2a2a44;
+  --bg-lines: #2e2e4a;
+  --bg-margin: #3a3a56;
+  --border: #3d3d5c;
+  --border-strong: #52527a;
+  --text: #c8c5d6;
+  --text-h: #e8e6f0;
+  --text-muted: #8a88a0;
+  --ink: #a8b4d4;
+  --ink-light: #8e9cc0;
+  --accent: #4caf7a;
+  --accent-hover: #5cc48c;
+  --accent-bg: rgba(76, 175, 122, 0.12);
+  --gold: #daa520;
+  --gold-light: rgba(218, 165, 32, 0.15);
+  --danger: #e05555;
+  --danger-hover: #cc4444;
+  --danger-bg: rgba(224, 85, 85, 0.1);
+  --success: #4caf7a;
+  --warning: #daa520;
+  --silver: #9a9a9a;
+  --bronze: #b87a50;
+  --topo: rgba(76, 175, 122, 0.06);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
 body {
   min-height: 100dvh;
   display: flex;
@@ -135,7 +167,7 @@ body {
 
 .btn-danger {
   background: var(--danger);
-  color: #fff;
+  color: var(--bg-card);
   border-color: var(--danger);
 }
 
@@ -151,7 +183,7 @@ body {
   padding: 14px 40px;
   border: 3px solid var(--danger);
   border-radius: 50px;
-  background: #fff;
+  background: var(--bg-card);
   color: var(--danger);
   font-family: var(--font-display);
   font-size: 1.3rem;
@@ -166,7 +198,7 @@ body {
 
 .btn-stop:hover {
   background: var(--danger);
-  color: #fff;
+  color: var(--bg-card);
   box-shadow: 0 0 0 4px var(--danger-bg), var(--shadow-md);
   transform: scale(1.02);
 }
@@ -313,6 +345,22 @@ select option {
 }
 
 .lang-btn:hover:not(.active) {
+  color: var(--ink);
+}
+
+.theme-toggle {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.15s;
+  margin-left: 4px;
+}
+
+.theme-toggle:hover {
   color: var(--ink);
 }
 
@@ -490,7 +538,7 @@ select option {
 .you-badge {
   font-size: 0.6rem;
   background: var(--accent);
-  color: #fff;
+  color: var(--bg-card);
   padding: 2px 8px;
   border-radius: 4px;
   font-family: var(--font-sans);
@@ -555,8 +603,8 @@ select option {
 }
 
 .setting-tooltip-trigger:hover {
-  background: var(--primary);
-  color: #fff;
+  background: var(--ink);
+  color: var(--bg-card);
 }
 
 .setting-tooltip {

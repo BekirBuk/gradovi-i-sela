@@ -26,7 +26,7 @@ const CompassRose = () => (
 );
 
 export default function Lobby() {
-  const { room, createRoom, joinRoom, leaveRoom, updateSettings, startGame, myId, lang, setLang } = useGame();
+  const { room, createRoom, joinRoom, leaveRoom, updateSettings, startGame, myId, lang, setLang, theme, toggleTheme } = useGame();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -178,6 +178,9 @@ export default function Lobby() {
             onClick={() => setLang('en')}
           >
             EN
+          </button>
+          <button className="theme-toggle" onClick={toggleTheme} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
+            {theme === 'light' ? '\u263E' : '\u2600'}
           </button>
         </div>
         <div className="menu-buttons">
