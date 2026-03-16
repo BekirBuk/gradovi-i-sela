@@ -21,6 +21,9 @@ const translations = {
     language: 'Language',
     rounds: 'Rounds',
     roundTime: 'Round Time',
+    gameMode: 'Game Mode',
+    gameModeTimer: 'Timer',
+    gameModeStop: 'Stop',
     beginExpedition: 'Begin Expedition',
     waitingForLeader: 'Waiting for the expedition leader...',
 
@@ -76,6 +79,9 @@ const translations = {
     language: 'Jezik',
     rounds: 'Runde',
     roundTime: 'Vrijeme Runde',
+    gameMode: 'Mod Igre',
+    gameModeTimer: 'Tajmer',
+    gameModeStop: 'Stop',
     beginExpedition: 'Započni Igru',
     waitingForLeader: 'Čekamo domaćina da započne igru...',
 

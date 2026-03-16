@@ -98,11 +98,21 @@ export default function Lobby() {
               <label>{t(lang, 'roundTime')}</label>
               <select
                 value={room.roundTime}
-                onChange={e => updateSettings(room.language, room.totalRounds, parseInt(e.target.value))}
+                onChange={e => updateSettings(room.language, room.totalRounds, parseInt(e.target.value), room.gameMode)}
               >
                 {[60, 90, 120, 150, 180].map(s => (
                   <option key={s} value={s}>{Math.floor(s / 60)}:{(s % 60).toString().padStart(2, '0')}</option>
                 ))}
+              </select>
+            </div>
+            <div className="setting-row">
+              <label>{t(lang, 'gameMode')}</label>
+              <select
+                value={room.gameMode}
+                onChange={e => updateSettings(room.language, room.totalRounds, room.roundTime, e.target.value as 'timer' | 'stop')}
+              >
+                <option value="stop">{t(lang, 'gameModeStop')}</option>
+                <option value="timer">{t(lang, 'gameModeTimer')}</option>
               </select>
             </div>
             <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1}>

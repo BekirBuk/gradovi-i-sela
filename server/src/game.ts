@@ -44,6 +44,7 @@ export interface Room {
   roundResults: RoundResult[];
   usedLetters: Set<string>;
   roundTime: number; // seconds
+  gameMode: 'timer' | 'stop';
   timer: ReturnType<typeof setTimeout> | null;
   roundStartTime: number;
   activeChallenges: Map<string, Challenge>;
@@ -79,6 +80,7 @@ export function createRoom(hostId: string, hostName: string, language?: Language
     roundResults: [],
     usedLetters: new Set(),
     roundTime: 60,
+    gameMode: 'stop',
     timer: null,
     roundStartTime: 0,
     activeChallenges: new Map(),
@@ -122,14 +124,16 @@ export function removePlayer(roomCode: string, playerId: string): Room | null {
   return room;
 }
 
-export function updateSettings(roomCode: string, language: Language, totalRounds: number, roundTime?: number): Room | null {
+export function updateSettings(roomCode: string, language: Language, totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop'): Room | null {
   const room = rooms.get(roomCode);
   if (!room || room.phase !== 'lobby') return null;
   room.language = language;
   room.totalRounds = Math.max(1, Math.min(10, totalRounds));
   if (roundTime !== undefined) {
-    // Clamp to 60-180 in 30-second increments
     room.roundTime = Math.max(60, Math.min(180, Math.round(roundTime / 30) * 30));
+  }
+  if (gameMode !== undefined) {
+    room.gameMode = gameMode;
   }
   return room;
 }
@@ -388,6 +392,7 @@ export function serializeRoom(room: Room) {
     language: room.language,
     totalRounds: room.totalRounds,
     roundTime: room.roundTime,
+    gameMode: room.gameMode,
     currentRound: room.currentRound,
     phase: room.phase,
     players: Array.from(room.players.values()),

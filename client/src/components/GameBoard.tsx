@@ -113,7 +113,7 @@ export default function GameBoard() {
           <p className="submitted-text">{t(lang, 'answersSubmitted')}</p>
         )}
 
-        {allFilled && !roundStopping && timeLeft > 0 && (
+        {allFilled && !roundStopping && timeLeft > 0 && room.gameMode === 'stop' && (
           <button className="btn btn-stop" onClick={handleStop}>
             {t(lang, 'stop')}
           </button>

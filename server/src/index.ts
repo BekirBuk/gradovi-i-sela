@@ -126,12 +126,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('update-settings', ({ language, totalRounds, roundTime }: { language: Language; totalRounds: number; roundTime?: number }) => {
+  socket.on('update-settings', ({ language, totalRounds, roundTime, gameMode }: { language: Language; totalRounds: number; roundTime?: number; gameMode?: 'timer' | 'stop' }) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) return;
     const session = playerSessions.get(playerId);
     if (!session) return;
-    const room = updateSettings(session.roomCode, language, totalRounds, roundTime);
+    const room = updateSettings(session.roomCode, language, totalRounds, roundTime, gameMode);
     if (room) {
       io.to(room.code).emit('room-updated', serializeRoom(room));
     }
@@ -186,6 +186,7 @@ io.on('connection', (socket) => {
     if (!session) return;
     const room = getRoom(session.roomCode);
     if (!room || room.phase !== 'playing') return;
+    if (room.gameMode === 'timer') return; // Stop not allowed in timer mode
 
     io.to(room.code).emit('round-stopping', { stoppedBy: playerId });
 
