@@ -231,6 +231,7 @@ io.on('connection', (socket) => {
     const lastResult = room.roundResults[room.roundResults.length - 1];
     if (!lastResult) return;
     const answerData = lastResult.answers[playerIdTarget]?.[category];
+    if (playerId !== playerIdTarget) return; // Only the answer's owner can challenge
     if (!answerData || answerData.valid) return; // Can only challenge invalid answers
 
     const challenge = createChallenge(room, playerIdTarget, category as Category, answerData.answer);

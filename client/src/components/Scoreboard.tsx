@@ -24,6 +24,7 @@ export default function Scoreboard() {
   }
 
   function canChallenge(playerId: string, cat: string) {
+    if (playerId !== myId) return false;
     const r = roundResult?.answers[playerId]?.[cat];
     if (!r || r.valid || !r.answer.trim()) return false;
     if (isChallenged(playerId, cat)) return false;
