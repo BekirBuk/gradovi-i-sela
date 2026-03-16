@@ -114,10 +114,10 @@ const translations = {
 export type TranslationKey = keyof typeof translations.en;
 
 export function t(lang: Language, key: TranslationKey, params?: Record<string, string>): string {
-  let text = translations[lang][key] || translations.en[key] || key;
+  let text: string = translations[lang][key] || translations.en[key] || key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      text = text.replace(`{${k}}`, v);
+      text = text.replaceAll(`{${k}}`, v);
     }
   }
   return text;
