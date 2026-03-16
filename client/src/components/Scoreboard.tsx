@@ -47,6 +47,12 @@ export default function Scoreboard() {
         }
       </h2>
 
+      {!activeChallenge && (
+        <p className="challenge-hint">
+          <span className="challenge-hint-icon">?</span> {t(lang, 'challengeHint')}
+        </p>
+      )}
+
       {activeChallenge && !activeChallenge.resolved && (
         <div className="challenge-banner">
           <p className="challenge-text">

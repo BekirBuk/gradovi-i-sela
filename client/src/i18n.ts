@@ -51,6 +51,7 @@ const translations = {
     waitingForNextRound: 'Waiting for host to start next round...',
 
     // Challenge
+    challengeHint: 'Think an answer was wrongly rejected? Click the ? to request approval from all players.',
     claims: 'claims',
     isAValid: 'is a valid',
     accept: 'Accept',
@@ -120,6 +121,7 @@ const translations = {
     waitingForNextRound: 'Čekamo domaćina za sljedeću rundu...',
 
     // Challenge
+    challengeHint: 'Mislite da je odgovor pogrešno odbijen? Kliknite ? da zatražite odobrenje od svih igrača.',
     claims: 'tvrdi da je',
     isAValid: 'validan odgovor za',
     accept: 'Prihvati',
