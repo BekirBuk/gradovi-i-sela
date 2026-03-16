@@ -4,7 +4,7 @@ const translations = {
   en: {
     // Lobby
     appTitle: 'Gradovi i Sela',
-    subtitle: 'A Geography Challenge',
+    subtitle: 'A classic game in a new look',
     createRoom: 'Create Room',
     joinRoom: 'Join Room',
     create: 'Create',
