@@ -3,7 +3,7 @@ export type Language = 'en' | 'bs';
 const translations = {
   en: {
     // Lobby
-    appTitle: 'Gradovi i Sela',
+    appTitle: 'Gradova i Sela',
     subtitle: 'A classic game with a new look',
     createRoom: 'Create Room',
     joinRoom: 'Join Room',
@@ -57,7 +57,7 @@ const translations = {
   },
   bs: {
     // Lobby
-    appTitle: 'Gradovi i Sela',
+    appTitle: 'Gradova i Sela',
     subtitle: 'Poznata igra u novom ruhu',
     createRoom: 'Kreiraj Sobu',
     joinRoom: 'Pridruži se',
