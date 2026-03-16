@@ -845,6 +845,137 @@ select option {
 }
 
 /* ============================
+   Mobile Results Cards
+   ============================ */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.results-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.result-card.my-card {
+  border-color: var(--gold);
+  background: var(--gold-light);
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.result-card-header .player-name {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.result-card-scores {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.result-card-scores .score {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.result-card-scores .score-divider {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.result-card-answers {
+  padding: 6px 0;
+}
+
+.result-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--bg-lines);
+}
+
+.result-card-row:last-child {
+  border-bottom: none;
+}
+
+.result-card-label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.result-card-answer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+}
+
+.result-card-row.valid .answer-text {
+  color: var(--ink);
+}
+
+.result-card-row.valid .answer-points {
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.result-card-row.invalid .answer-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--danger);
+}
+
+.result-card-row.empty .answer-text {
+  color: var(--text-muted);
+}
+
+.result-card-row.challenge-accepted .answer-text {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.result-card-row.challenge-accepted .answer-points {
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* ============================
    Final Ranking - podium style
    ============================ */
 .final-ranking {
@@ -1066,16 +1197,11 @@ select option {
     align-items: center;
   }
 
-  .results-table {
-    font-size: 0.75rem;
+  .desktop-only {
+    display: none;
   }
 
-  .results-table th {
-    font-size: 0.55rem;
-    padding: 8px 4px;
-  }
-
-  .results-table td {
-    padding: 6px 4px;
+  .mobile-only {
+    display: flex;
   }
 }

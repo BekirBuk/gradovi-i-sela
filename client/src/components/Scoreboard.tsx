@@ -75,7 +75,8 @@ export default function Scoreboard() {
         </div>
       )}
 
-      <div className="results-table-wrapper">
+      {/* Desktop table */}
+      <div className="results-table-wrapper desktop-only">
         <table className="results-table">
           <thead>
             <tr>
@@ -132,6 +133,60 @@ export default function Scoreboard() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="results-cards mobile-only">
+        {sortedPlayers.map(player => {
+          const playerResults = roundResult.answers[player.id];
+          const roundScore = roundResult.scores[player.id] || 0;
+          return (
+            <div key={player.id} className={`result-card ${player.id === myId ? 'my-card' : ''}`}>
+              <div className="result-card-header">
+                <span className="player-name">{player.name}</span>
+                <div className="result-card-scores">
+                  <span className="score round-score">{roundScore}</span>
+                  <span className="score-divider">/</span>
+                  <span className="score total-score">{player.totalScore}</span>
+                </div>
+              </div>
+              <div className="result-card-answers">
+                {CATEGORY_ORDER.map(cat => {
+                  const r = playerResults?.[cat];
+                  const challenged = isChallenged(player.id, cat);
+                  const wasAccepted = resolvedChallenges.find(
+                    c => c.playerId === player.id && c.category === cat
+                  )?.accepted;
+
+                  return (
+                    <div key={cat} className={`result-card-row ${r ? (r.valid ? 'valid' : 'invalid') : 'empty'} ${challenged && wasAccepted ? 'challenge-accepted' : ''}`}>
+                      <span className="result-card-label">{labels[cat] || cat}</span>
+                      <span className="result-card-answer">
+                        <span className="answer-text">{r?.answer || '-'}</span>
+                        {r && r.points > 0 && <span className="answer-points">+{r.points}</span>}
+                        {r && canChallenge(player.id, cat) && (
+                          <button
+                            className="btn-challenge"
+                            onClick={() => challengeAnswer(player.id, cat)}
+                            title="Challenge"
+                          >
+                            ?
+                          </button>
+                        )}
+                        {challenged && wasAccepted && (
+                          <span className="challenge-badge accepted">{t(lang, 'accepted')}</span>
+                        )}
+                        {challenged && !wasAccepted && (
+                          <span className="challenge-badge rejected">{t(lang, 'rejected')}</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {gameOver && (
