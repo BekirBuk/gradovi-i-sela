@@ -58,7 +58,7 @@ const translations = {
   bs: {
     // Lobby
     appTitle: 'Gradovi i Sela',
-    subtitle: 'Geografski Izazov',
+    subtitle: 'Poznata igra u novom ruhu',
     createRoom: 'Kreiraj Sobu',
     joinRoom: 'Pridruži se',
     create: 'Kreiraj',
