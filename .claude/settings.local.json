@@ -16,7 +16,12 @@
       "Bash(cmd.exe //C \"taskkill /PID 15784 /F\" 2>&1)",
       "Bash(powershell.exe -Command \"Stop-Process -Id 15784 -Force\" 2>&1)",
       "Bash(sleep 1 && netstat -ano | grep :3001 | grep LISTEN)",
-      "Bash(which gh:*)"
+      "Bash(which gh:*)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela\" && gh repo create gradovi-i-sela --public --source=. --push 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/server\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npx vite build 2>&1 | tail -8)",
+      "Bash(cd \"C:/Users/Beks/Desktop/Gradova i Sela/client\" && npx tsc --noEmit 2>&1 && npx vite build 2>&1 | tail -6)"
     ]
   }
 }

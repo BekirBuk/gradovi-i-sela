@@ -84,20 +84,6 @@ export default function Lobby() {
           <div className="settings">
             <h3>{t(lang, 'expeditionSettings')}</h3>
             <div className="setting-row">
-              <label>{t(lang, 'language')}</label>
-              <select
-                value={room.language}
-                onChange={e => {
-                  const newLang = e.target.value as 'en' | 'bs';
-                  setLang(newLang);
-                  updateSettings(newLang, room.totalRounds);
-                }}
-              >
-                <option value="bs">Bosanski</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-            <div className="setting-row">
               <label>{t(lang, 'rounds')}</label>
               <select
                 value={room.totalRounds}

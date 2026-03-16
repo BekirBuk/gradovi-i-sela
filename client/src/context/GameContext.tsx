@@ -220,7 +220,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const createRoomFn = useCallback((name: string): Promise<RoomState> => {
     return new Promise((resolve, reject) => {
-      socket.emit('create-room', { playerName: name, playerId: myId }, (res: { success: boolean; room?: RoomState; error?: string }) => {
+      socket.emit('create-room', { playerName: name, playerId: myId, language: lang }, (res: { success: boolean; room?: RoomState; error?: string }) => {
         if (res.success && res.room) {
           setRoom(res.room);
           setAllResults([]);
@@ -231,7 +231,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       });
     });
-  }, [socket, myId]);
+  }, [socket, myId, lang]);
 
   const joinRoomFn = useCallback((code: string, name: string): Promise<RoomState> => {
     return new Promise((resolve, reject) => {

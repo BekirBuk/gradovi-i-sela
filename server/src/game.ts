@@ -62,12 +62,12 @@ function generateRoomCode(): string {
   return code;
 }
 
-export function createRoom(hostId: string, hostName: string): Room {
+export function createRoom(hostId: string, hostName: string, language?: Language): Room {
   const code = generateRoomCode();
   const room: Room = {
     code,
     hostId,
-    language: 'bs',
+    language: language || 'bs',
     totalRounds: 3,
     currentRound: 0,
     phase: 'lobby',

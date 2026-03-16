@@ -66,8 +66,8 @@ function endRound(room: Room) {
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
-  socket.on('create-room', ({ playerName, playerId }: { playerName: string; playerId: string }, callback) => {
-    const room = createRoom(playerId, playerName);
+  socket.on('create-room', ({ playerName, playerId, language }: { playerName: string; playerId: string; language?: Language }, callback) => {
+    const room = createRoom(playerId, playerName, language);
     socket.join(room.code);
     playerSessions.set(playerId, { roomCode: room.code, socketId: socket.id });
     socketToPlayer.set(socket.id, playerId);
