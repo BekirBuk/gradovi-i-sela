@@ -290,6 +290,24 @@ io.on('connection', (socket) => {
     io.to(room.code).emit('room-updated', serializeRoom(room));
   });
 
+  socket.on('leave-room', (callback?: () => void) => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = removePlayer(session.roomCode, playerId);
+    socket.leave(session.roomCode);
+    playerSessions.delete(playerId);
+    socketToPlayer.delete(socket.id);
+    if (room) {
+      io.to(room.code).emit('room-updated', serializeRoom(room));
+      if (room.phase === 'playing' && allPlayersSubmitted(room)) {
+        endRound(room);
+      }
+    }
+    if (callback) callback();
+  });
+
   socket.on('disconnect', () => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) {

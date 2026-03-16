@@ -26,7 +26,7 @@ const CompassRose = () => (
 );
 
 export default function Lobby() {
-  const { room, createRoom, joinRoom, updateSettings, startGame, myId, lang, setLang } = useGame();
+  const { room, createRoom, joinRoom, leaveRoom, updateSettings, startGame, myId, lang, setLang } = useGame();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -64,6 +64,7 @@ export default function Lobby() {
           <CompassRose />
           <h1>{t(lang, 'appTitle')}</h1>
         </div>
+        <button className="btn-back" onClick={leaveRoom}>{t(lang, 'back')}</button>
         <div className="room-info">
           <div className="room-code">
             <span className="label">{t(lang, 'roomCode')}</span>
