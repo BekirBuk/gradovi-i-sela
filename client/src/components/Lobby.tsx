@@ -32,6 +32,7 @@ export default function Lobby() {
   const [error, setError] = useState('');
   const [view, setView] = useState<'menu' | 'create' | 'join'>('menu');
   const [tooltip, setTooltip] = useState<string | null>(null);
+  const [page, setPage] = useState<'about' | 'rules' | 'privacy' | null>(null);
 
   const isHost = room?.hostId === myId;
 
@@ -141,6 +142,21 @@ export default function Lobby() {
     );
   }
 
+  if (page) {
+    return (
+      <div className="lobby">
+        <div className="lobby-header">
+          <h1>{t(lang, 'appTitle')}</h1>
+        </div>
+        <button className="btn-back" onClick={() => setPage(null)}>{t(lang, 'back')}</button>
+        <div className="info-page">
+          <h2>{t(lang, page === 'about' ? 'aboutTitle' : page === 'rules' ? 'rulesTitle' : 'privacyTitle')}</h2>
+          <div className="info-content">{t(lang, page === 'about' ? 'aboutContent' : page === 'rules' ? 'rulesContent' : 'privacyContent')}</div>
+        </div>
+      </div>
+    );
+  }
+
   if (view === 'menu') {
     return (
       <div className="lobby">
@@ -173,6 +189,13 @@ export default function Lobby() {
         </div>
         <div className="lobby-coordinates">
           {t(lang, 'coordinates')}
+        </div>
+        <div className="lobby-footer-links">
+          <button onClick={() => setPage('about')}>{t(lang, 'aboutTitle')}</button>
+          <span className="footer-sep">&middot;</span>
+          <button onClick={() => setPage('rules')}>{t(lang, 'rulesTitle')}</button>
+          <span className="footer-sep">&middot;</span>
+          <button onClick={() => setPage('privacy')}>{t(lang, 'privacyTitle')}</button>
         </div>
       </div>
     );

@@ -59,6 +59,14 @@ const translations = {
     accepted: 'Accepted',
     rejected: 'Rejected',
 
+    // Footer pages
+    aboutTitle: 'About Us',
+    aboutContent: 'Gradova i Sela is a digital version of the beloved pen-and-paper geography game known across the Balkans. Players compete to fill in categories — countries, cities, rivers, mountains, animals, plants, and names — all starting with a randomly chosen letter. Built with love in Sarajevo.',
+    rulesTitle: 'Rules',
+    rulesContent: 'Each round, a random letter is chosen. Players must fill in a valid answer for each category starting with that letter. Points: 20 if you are the only one with a valid answer in a category, 10 for a unique valid answer, 5 if another player has the same answer. Empty or invalid answers score 0. In Stop mode, any player who fills all categories can press STOP to end the round early. In Timer mode, the round ends only when time runs out. The player with the most points at the end wins!',
+    privacyTitle: 'Privacy',
+    privacyContent: 'We do not collect or store any personal data. No accounts, no cookies, no tracking. Your game data exists only for the duration of the session and is deleted when the room closes. This game is open source and runs entirely in your browser and our server memory.',
+
     // Coordinates
     coordinates: '43.8563\u00B0N \u00B7 18.4131\u00B0E',
   },
@@ -119,6 +127,14 @@ const translations = {
     waitingForVotes: 'Čekamo glasove...',
     accepted: 'Prihvaćeno',
     rejected: 'Odbijeno',
+
+    // Footer pages
+    aboutTitle: 'O Nama',
+    aboutContent: 'Gradova i Sela je digitalna verzija omiljene igre na papiru poznate širom Balkana. Igrači se takmiče da popune kategorije — države, gradovi, rijeke, planine, životinje, biljke i imena — sve počevši sa nasumično odabranim slovom. Napravljeno s ljubavlju u Sarajevu.',
+    rulesTitle: 'Pravila',
+    rulesContent: 'Svake runde bira se nasumično slovo. Igrači moraju upisati validan odgovor za svaku kategoriju koji počinje tim slovom. Bodovi: 20 ako ste jedini sa validnim odgovorom u kategoriji, 10 za jedinstven validan odgovor, 5 ako drugi igrač ima isti odgovor. Prazan ili nevalidan odgovor nosi 0 bodova. U Stop modu, svaki igrač koji popuni sve kategorije može pritisnuti STOP da završi rundu ranije. U Tajmer modu, runda završava samo kad istekne vrijeme. Igrač sa najviše bodova na kraju pobjeđuje!',
+    privacyTitle: 'Privatnost',
+    privacyContent: 'Ne prikupljamo niti čuvamo lične podatke. Nema naloga, kolačića, niti praćenja. Podaci o igri postoje samo tokom trajanja sesije i brišu se kada se soba zatvori. Ova igra je otvorenog koda i radi u potpunosti u vašem pregledniku i memoriji našeg servera.',
 
     // Coordinates
     coordinates: '43.8563\u00B0N \u00B7 18.4131\u00B0E',

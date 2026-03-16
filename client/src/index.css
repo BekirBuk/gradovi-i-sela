@@ -324,6 +324,54 @@ select option {
   margin-top: 16px;
 }
 
+.lobby-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.lobby-footer-links button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lobby-footer-links button:hover {
+  color: var(--primary);
+}
+
+.lobby-footer-links .footer-sep {
+  color: var(--border);
+  font-size: 0.7rem;
+}
+
+.info-page {
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+}
+
+.info-page h2 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.info-content {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
 .menu-buttons {
   display: flex;
   flex-direction: column;
