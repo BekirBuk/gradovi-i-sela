@@ -84,8 +84,7 @@ export default function Scoreboard() {
               {CATEGORY_ORDER.map(cat => (
                 <th key={cat}>{labels[cat] || cat}</th>
               ))}
-              <th>{t(lang, 'round')}</th>
-              <th>Total</th>
+              <th>{gameOver ? 'Total' : t(lang, 'round')}</th>
             </tr>
           </thead>
           <tbody>
@@ -126,8 +125,7 @@ export default function Scoreboard() {
                       </td>
                     );
                   })}
-                  <td className="score round-score">{roundScore}</td>
-                  <td className="score total-score">{player.totalScore}</td>
+                  <td className={`score ${gameOver ? 'total-score' : 'round-score'}`}>{gameOver ? player.totalScore : roundScore}</td>
                 </tr>
               );
             })}
@@ -144,11 +142,7 @@ export default function Scoreboard() {
             <div key={player.id} className={`result-card ${player.id === myId ? 'my-card' : ''}`}>
               <div className="result-card-header">
                 <span className="player-name">{player.name}</span>
-                <div className="result-card-scores">
-                  <span className="score round-score">{roundScore}</span>
-                  <span className="score-divider">/</span>
-                  <span className="score total-score">{player.totalScore}</span>
-                </div>
+                <span className={`score ${gameOver ? 'total-score' : 'round-score'}`}>{gameOver ? player.totalScore : roundScore}</span>
               </div>
               <div className="result-card-answers">
                 {CATEGORY_ORDER.map(cat => {
