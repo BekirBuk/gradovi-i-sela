@@ -57,7 +57,7 @@ interface GameState {
   setLang: (lang: 'en' | 'bs') => void;
   createRoom: (name: string) => Promise<RoomState>;
   joinRoom: (code: string, name: string) => Promise<RoomState>;
-  updateSettings: (language: 'en' | 'bs', totalRounds: number) => void;
+  updateSettings: (language: 'en' | 'bs', totalRounds: number, roundTime?: number) => void;
   startGame: () => void;
   submitAnswers: (answers: Record<string, string>) => void;
   stopRound: () => void;
@@ -248,8 +248,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   }, [socket, myId]);
 
-  const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number) => {
-    socket.emit('update-settings', { language, totalRounds });
+  const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number, roundTime?: number) => {
+    socket.emit('update-settings', { language, totalRounds, roundTime });
   }, [socket]);
 
   const startGameFn = useCallback(() => {

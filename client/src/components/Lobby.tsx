@@ -87,10 +87,21 @@ export default function Lobby() {
               <label>{t(lang, 'rounds')}</label>
               <select
                 value={room.totalRounds}
-                onChange={e => updateSettings(room.language, parseInt(e.target.value))}
+                onChange={e => updateSettings(room.language, parseInt(e.target.value), room.roundTime)}
               >
                 {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
                   <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <div className="setting-row">
+              <label>{t(lang, 'roundTime')}</label>
+              <select
+                value={room.roundTime}
+                onChange={e => updateSettings(room.language, room.totalRounds, parseInt(e.target.value))}
+              >
+                {[60, 90, 120, 150, 180].map(s => (
+                  <option key={s} value={s}>{Math.floor(s / 60)}:{(s % 60).toString().padStart(2, '0')}</option>
                 ))}
               </select>
             </div>

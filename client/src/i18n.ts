@@ -20,6 +20,7 @@ const translations = {
     expeditionSettings: 'Expedition Settings',
     language: 'Language',
     rounds: 'Rounds',
+    roundTime: 'Round Time',
     beginExpedition: 'Begin Expedition',
     waitingForLeader: 'Waiting for the expedition leader...',
 
@@ -74,6 +75,7 @@ const translations = {
     expeditionSettings: 'Postavke',
     language: 'Jezik',
     rounds: 'Runde',
+    roundTime: 'Vrijeme Runde',
     beginExpedition: 'Započni Igru',
     waitingForLeader: 'Čekamo domaćina da započne igru...',
 

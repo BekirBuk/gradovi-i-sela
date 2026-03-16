@@ -21,7 +21,7 @@ const io = new Server(httpServer, {
   },
 });
 
-const ROUND_TIME = 60; // seconds
+
 const DISCONNECT_GRACE_PERIOD = 30_000; // 30 seconds to reconnect
 
 // Map playerId -> { roomCode, socketId }
@@ -114,7 +114,7 @@ io.on('connection', (socket) => {
     const lastResult = room.roundResults.length > 0 ? room.roundResults[room.roundResults.length - 1] : null;
     const gameOver = room.phase === 'finished';
     const timeElapsed = room.phase === 'playing' ? Math.floor((Date.now() - room.roundStartTime) / 1000) : 0;
-    const timeRemaining = room.phase === 'playing' ? Math.max(0, ROUND_TIME - timeElapsed) : 0;
+    const timeRemaining = room.phase === 'playing' ? Math.max(0, room.roundTime - timeElapsed) : 0;
 
     callback({
       success: true,
@@ -126,12 +126,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('update-settings', ({ language, totalRounds }: { language: Language; totalRounds: number }) => {
+  socket.on('update-settings', ({ language, totalRounds, roundTime }: { language: Language; totalRounds: number; roundTime?: number }) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) return;
     const session = playerSessions.get(playerId);
     if (!session) return;
-    const room = updateSettings(session.roomCode, language, totalRounds);
+    const room = updateSettings(session.roomCode, language, totalRounds, roundTime);
     if (room) {
       io.to(room.code).emit('room-updated', serializeRoom(room));
     }
@@ -151,12 +151,12 @@ io.on('connection', (socket) => {
       round: room.currentRound,
       totalRounds: room.totalRounds,
       room: serializeRoom(room),
-      duration: ROUND_TIME,
+      duration: room.roundTime,
     });
 
     room.timer = setTimeout(() => {
       endRound(room);
-    }, ROUND_TIME * 1000);
+    }, room.roundTime * 1000);
   });
 
   socket.on('submit-answers', ({ answers }: { answers: Record<Category, string> }) => {
@@ -210,12 +210,12 @@ io.on('connection', (socket) => {
       round: room.currentRound,
       totalRounds: room.totalRounds,
       room: serializeRoom(room),
-      duration: ROUND_TIME,
+      duration: room.roundTime,
     });
 
     room.timer = setTimeout(() => {
       endRound(room);
-    }, ROUND_TIME * 1000);
+    }, room.roundTime * 1000);
   });
 
   socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: Category }) => {
