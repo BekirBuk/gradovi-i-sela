@@ -246,7 +246,7 @@ io.on('connection', (socket) => {
     }, room.roundTime * 1000);
   });
 
-  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: Category }, callback?: (res: { success: boolean; error?: string }) => void) => {
+  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: string }, callback?: (res: { success: boolean; error?: string }) => void) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) { callback?.({ success: false, error: 'Not connected' }); return; }
     const session = playerSessions.get(playerId);
@@ -265,7 +265,7 @@ io.on('connection', (socket) => {
     if (playerId !== playerIdTarget) { callback?.({ success: false, error: 'Not your answer' }); return; }
     if (!answerData || answerData.valid) { callback?.({ success: false, error: 'Answer is already valid' }); return; }
 
-    const challenge = createChallenge(room, playerIdTarget, category as Category, answerData.answer);
+    const challenge = createChallenge(room, playerIdTarget, category, answerData.answer);
     if (!challenge) { callback?.({ success: false, error: 'Challenge already exists' }); return; }
 
     // Auto-resolve if only 1 player in the room (solo testing)

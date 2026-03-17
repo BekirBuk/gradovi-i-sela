@@ -23,7 +23,7 @@ export interface RoundResult {
 export interface Challenge {
   id: string;
   playerId: string;
-  category: Category;
+  category: string;
   answer: string;
   votes: Map<string, boolean>; // playerId -> accepted
   resolved: boolean;
@@ -219,11 +219,8 @@ export function scoreRound(room: Room): RoundResult {
 
   function isValidAnswer(answer: string, cat: string): boolean {
     if (isCustom) {
-      // Custom mode: valid if non-empty and starts with correct letter
-      if (!answer || !answer.trim()) return false;
-      const normalizedAnswer = normalize(answer);
-      const normalizedLetter = normalize(room.currentLetter);
-      return normalizedAnswer.startsWith(normalizedLetter);
+      // Custom mode: all answers are invalid (require manual approval via challenges)
+      return false;
     }
     return validateAnswer(answer, cat as Category, room.currentLetter, room.language);
   }
@@ -324,7 +321,7 @@ export function hasRemainingChallenges(room: Room, playerId: string): boolean {
   });
 }
 
-export function createChallenge(room: Room, playerId: string, category: Category, answer: string): Challenge | null {
+export function createChallenge(room: Room, playerId: string, category: string, answer: string): Challenge | null {
   if (room.phase !== 'scoring' && room.phase !== 'finished') return null;
 
   const id = `${playerId}-${category}`;
@@ -363,7 +360,9 @@ export function checkStaleChallenges(room: Room): Challenge[] {
       challenge.resolved = true;
       challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
       if (challenge.accepted) {
-        addWord(challenge.answer, challenge.category, room.language);
+        if (room.categoryMode === 'original') {
+          addWord(challenge.answer, challenge.category as Category, room.language);
+        }
         recalculateLastRound(room);
       }
       resolved.push(challenge);
@@ -384,8 +383,10 @@ export function voteChallenge(room: Room, challengeId: string, voterId: string, 
     challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
 
     if (challenge.accepted) {
-      // Add word to word list
-      addWord(challenge.answer, challenge.category, room.language);
+      // Add word to word list (only for original categories)
+      if (room.categoryMode === 'original') {
+        addWord(challenge.answer, challenge.category as Category, room.language);
+      }
       // Recalculate the current round result
       recalculateLastRound(room);
     }
@@ -402,12 +403,19 @@ function recalculateLastRound(room: Room): void {
   const categories = getActiveCategories(room);
   const isCustom = room.categoryMode === 'custom';
 
-  function isValidAnswer(answer: string, cat: string): boolean {
+  // Build set of accepted challenge overrides: "playerId-category"
+  const acceptedOverrides = new Set<string>();
+  for (const challenge of room.activeChallenges.values()) {
+    if (challenge.resolved && challenge.accepted) {
+      acceptedOverrides.add(`${challenge.playerId}-${challenge.category}`);
+    }
+  }
+
+  function isValidAnswer(answer: string, cat: string, pid?: string): boolean {
+    if (pid && acceptedOverrides.has(`${pid}-${cat}`)) return true;
     if (isCustom) {
-      if (!answer || !answer.trim()) return false;
-      const na = normalize(answer);
-      const nl = normalize(room.currentLetter);
-      return na.startsWith(nl);
+      // Custom mode: only valid if approved via challenge
+      return false;
     }
     return validateAnswer(answer, cat as Category, result.letter, room.language);
   }
@@ -440,14 +448,14 @@ function recalculateLastRound(room: Room): void {
     result.scores[pid] = 0;
     for (const cat of categories) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
-      const valid = isValidAnswer(answer, cat);
+      const valid = isValidAnswer(answer, cat, pid);
 
       let points = 0;
       if (valid) {
         let validAnswerCount = 0;
         for (const otherId of playerIds) {
           const otherAnswer = room.roundAnswers[otherId]?.[cat] || '';
-          if (isValidAnswer(otherAnswer, cat)) {
+          if (isValidAnswer(otherAnswer, cat, otherId)) {
             validAnswerCount++;
           }
         }
