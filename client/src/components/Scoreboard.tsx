@@ -6,7 +6,7 @@ const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals',
 export default function Scoreboard() {
   const {
     room, roundResult, gameOver, nextRound, playAgain, myId, lang,
-    challengeAnswer, voteChallenge, activeChallenge, resolvedChallenges
+    challengeAnswer, voteChallenge, skipChallenges, activeChallenge, resolvedChallenges
   } = useGame();
 
   if (!room || !roundResult) return null;
@@ -14,6 +14,10 @@ export default function Scoreboard() {
   const isHost = room.hostId === myId;
   const labels = room.categoryLabels;
   const sortedPlayers = [...room.players].sort((a, b) => b.totalScore - a.totalScore);
+
+  const currentChallenger = room.currentChallenger;
+  const challengePhaseOver = room.challengePhaseOver;
+  const isMyTurn = currentChallenger === myId;
 
   function isChallenged(playerId: string, cat: string) {
     return resolvedChallenges.some(c => c.playerId === playerId && c.category === cat);
@@ -25,11 +29,12 @@ export default function Scoreboard() {
 
   function canChallenge(playerId: string, cat: string) {
     if (playerId !== myId) return false;
+    if (!isMyTurn) return false;
+    if (activeChallenge) return false;
     const r = roundResult?.answers[playerId]?.[cat];
     if (!r || r.valid || !r.answer.trim()) return false;
     if (isChallenged(playerId, cat)) return false;
     if (isBeingChallenged(playerId, cat)) return false;
-    if (activeChallenge) return false;
     return true;
   }
 
@@ -38,6 +43,8 @@ export default function Scoreboard() {
     && !(myId in activeChallenge.votes);
 
   const playerName = (id: string) => room.players.find(p => p.id === id)?.name || '?';
+
+  const challengerName = currentChallenger ? playerName(currentChallenger) : '';
 
   return (
     <div className="scoreboard">
@@ -48,10 +55,29 @@ export default function Scoreboard() {
         }
       </h2>
 
-      {!activeChallenge && (
-        <p className="challenge-hint">
-          <span className="challenge-hint-icon">?</span> {t(lang, 'challengeHint')}
-        </p>
+      {/* Challenge turn indicator */}
+      {!challengePhaseOver && !activeChallenge && (
+        <div className="challenge-turn-banner">
+          {isMyTurn ? (
+            <>
+              <p className="challenge-turn-text challenge-your-turn">
+                <span className="challenge-hint-icon">?</span> {t(lang, 'challengeYourTurn')}
+              </p>
+              <p className="challenge-hint-sub">{t(lang, 'challengeHint')}</p>
+              <button className="btn btn-secondary" onClick={skipChallenges}>
+                {t(lang, 'skipChallenges')}
+              </button>
+            </>
+          ) : (
+            <p className="challenge-turn-text">
+              {t(lang, 'challengeTurn', { name: challengerName })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {challengePhaseOver && !activeChallenge && (
+        <p className="challenge-hint">{t(lang, 'noChallenges')}</p>
       )}
 
       {activeChallenge && !activeChallenge.resolved && (
@@ -98,9 +124,13 @@ export default function Scoreboard() {
             {sortedPlayers.map(player => {
               const playerResults = roundResult.answers[player.id];
               const roundScore = roundResult.scores[player.id] || 0;
+              const isCurrentChallenger = player.id === currentChallenger && !challengePhaseOver;
               return (
-                <tr key={player.id} className={player.id === myId ? 'my-row' : ''}>
-                  <td className="player-name">{player.name}</td>
+                <tr key={player.id} className={`${player.id === myId ? 'my-row' : ''} ${isCurrentChallenger ? 'challenger-row' : ''}`}>
+                  <td className="player-name">
+                    {player.name}
+                    {isCurrentChallenger && <span className="challenger-indicator"> &#9998;</span>}
+                  </td>
                   {CATEGORY_ORDER.map(cat => {
                     const r = playerResults?.[cat];
                     if (!r) return <td key={cat} className="answer empty">-</td>;
@@ -145,10 +175,14 @@ export default function Scoreboard() {
         {sortedPlayers.map(player => {
           const playerResults = roundResult.answers[player.id];
           const roundScore = roundResult.scores[player.id] || 0;
+          const isCurrentChallenger = player.id === currentChallenger && !challengePhaseOver;
           return (
-            <div key={player.id} className={`result-card ${player.id === myId ? 'my-card' : ''}`}>
+            <div key={player.id} className={`result-card ${player.id === myId ? 'my-card' : ''} ${isCurrentChallenger ? 'challenger-card' : ''}`}>
               <div className="result-card-header">
-                <span className="player-name">{player.name}</span>
+                <span className="player-name">
+                  {player.name}
+                  {isCurrentChallenger && <span className="challenger-indicator"> &#9998;</span>}
+                </span>
                 <span className={`score ${gameOver ? 'total-score' : 'round-score'}`}>{gameOver ? player.totalScore : roundScore}</span>
               </div>
               <div className="result-card-answers">
@@ -208,11 +242,11 @@ export default function Scoreboard() {
       {isHost && (
         <div className="scoreboard-actions">
           {!gameOver ? (
-            <button className="btn btn-primary btn-large" onClick={nextRound} disabled={!!activeChallenge}>
+            <button className="btn btn-primary btn-large" onClick={nextRound} disabled={!!activeChallenge || !challengePhaseOver}>
               {t(lang, 'nextRound')}
             </button>
           ) : (
-            <button className="btn btn-primary btn-large" onClick={playAgain} disabled={!!activeChallenge}>
+            <button className="btn btn-primary btn-large" onClick={playAgain} disabled={!!activeChallenge || !challengePhaseOver}>
               {t(lang, 'playAgain')}
             </button>
           )}

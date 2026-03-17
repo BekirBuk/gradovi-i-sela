@@ -70,6 +70,7 @@ interface GameState {
   playAgain: () => void;
   challengeAnswer: (playerId: string, category: string) => void;
   voteChallenge: (challengeId: string, accept: boolean) => void;
+  skipChallenges: () => void;
   myId: string;
 }
 
@@ -214,6 +215,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setRoom(data.room);
     });
 
+    socket.on('challenge-turn-changed', (data: { room: RoomState }) => {
+      setRoom(data.room);
+    });
+
     return () => {
       socket.off('room-updated');
       socket.off('round-started');
@@ -224,6 +229,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('challenge-started');
       socket.off('challenge-voted');
       socket.off('challenge-resolved');
+      socket.off('challenge-turn-changed');
     };
   }, [socket]);
 
@@ -331,6 +337,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket.emit('vote-challenge', { challengeId, accept });
   }, [socket]);
 
+  const skipChallengesFn = useCallback(() => {
+    socket.emit('skip-challenges');
+  }, [socket]);
+
   return (
     <GameContext.Provider value={{
       room,
@@ -360,6 +370,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       playAgain: playAgainFn,
       challengeAnswer: challengeAnswerFn,
       voteChallenge: voteChallengeFn,
+      skipChallenges: skipChallengesFn,
       myId,
     }}>
       {children}

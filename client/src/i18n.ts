@@ -53,6 +53,10 @@ const translations = {
 
     // Challenge
     challengeHint: 'Our database cannot cover every valid answer. If your answer was wrongly rejected, click the ? to request approval from all players.',
+    challengeTurn: '{name}\'s turn to challenge',
+    challengeYourTurn: 'Your turn! Challenge any rejected answers or skip.',
+    skipChallenges: 'Skip',
+    noChallenges: 'No answers to challenge.',
     claims: 'claims',
     isAValid: 'is a valid',
     accept: 'Accept',
@@ -124,6 +128,10 @@ const translations = {
 
     // Challenge
     challengeHint: 'Naša baza podataka ne pokriva sve moguće odgovore. Ako je vaš odgovor pogrešno odbijen, kliknite ? da zatražite odobrenje od svih igrača.',
+    challengeTurn: '{name} na redu za izazov',
+    challengeYourTurn: 'Vaš red! Osporite odbijene odgovore ili preskočite.',
+    skipChallenges: 'Preskoči',
+    noChallenges: 'Nema odgovora za osporiti.',
     claims: 'tvrdi da je',
     isAValid: 'validan odgovor za',
     accept: 'Prihvati',

@@ -48,6 +48,8 @@ export interface Room {
   timer: ReturnType<typeof setTimeout> | null;
   roundStartTime: number;
   activeChallenges: Map<string, Challenge>;
+  challengeOrder: string[]; // player IDs who have invalid answers
+  currentChallengerIndex: number;
 }
 
 const rooms = new Map<string, Room>();
@@ -84,6 +86,8 @@ export function createRoom(hostId: string, hostName: string, language?: Language
     timer: null,
     roundStartTime: 0,
     activeChallenges: new Map(),
+    challengeOrder: [],
+    currentChallengerIndex: 0,
   };
   rooms.set(code, room);
   return room;
@@ -114,6 +118,15 @@ export function removePlayer(roomCode: string, playerId: string): Room | null {
     if (room.timer) clearTimeout(room.timer);
     rooms.delete(roomCode);
     return null;
+  }
+
+  // Remove from challenge order if present
+  const challengeIdx = room.challengeOrder.indexOf(playerId);
+  if (challengeIdx !== -1) {
+    room.challengeOrder.splice(challengeIdx, 1);
+    if (challengeIdx < room.currentChallengerIndex) {
+      room.currentChallengerIndex--;
+    }
   }
 
   // Transfer host if host left
@@ -246,7 +259,31 @@ export function scoreRound(room: Room): RoundResult {
 
   room.roundResults.push(result);
   room.phase = 'scoring';
+
+  // Compute challenge order: players who have at least one invalid answer with text
+  room.challengeOrder = playerIds.filter(pid => {
+    return CATEGORIES.some(cat => {
+      const r = result.answers[pid]?.[cat];
+      return r && !r.valid && r.answer.trim();
+    });
+  });
+  room.currentChallengerIndex = 0;
+
   return result;
+}
+
+export function getCurrentChallenger(room: Room): string | null {
+  if (room.currentChallengerIndex >= room.challengeOrder.length) return null;
+  return room.challengeOrder[room.currentChallengerIndex];
+}
+
+export function advanceChallenger(room: Room): string | null {
+  room.currentChallengerIndex++;
+  return getCurrentChallenger(room);
+}
+
+export function isChallengePhaseOver(room: Room): boolean {
+  return room.currentChallengerIndex >= room.challengeOrder.length;
 }
 
 export function createChallenge(room: Room, playerId: string, category: Category, answer: string): Challenge | null {
@@ -412,6 +449,8 @@ export function resetGame(room: Room): void {
   room.roundAnswers = {};
   room.submittedPlayers = new Set();
   room.activeChallenges = new Map();
+  room.challengeOrder = [];
+  room.currentChallengerIndex = 0;
   for (const player of room.players.values()) {
     player.totalScore = 0;
   }
@@ -431,5 +470,7 @@ export function serializeRoom(room: Room) {
     currentLetter: room.currentLetter,
     submittedCount: room.submittedPlayers.size,
     categoryLabels: getCategoryLabels(room.language),
+    currentChallenger: getCurrentChallenger(room),
+    challengePhaseOver: isChallengePhaseOver(room),
   };
 }

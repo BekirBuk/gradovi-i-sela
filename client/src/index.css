@@ -1183,6 +1183,54 @@ select option {
 /* ============================
    Challenge System
    ============================ */
+.challenge-turn-banner {
+  width: 100%;
+  background: var(--bg-card);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.challenge-turn-text {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.challenge-your-turn {
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.challenge-hint-sub {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.challenger-row {
+  background: var(--gold-light) !important;
+}
+
+.challenger-card {
+  border-color: var(--gold) !important;
+}
+
+.challenger-indicator {
+  color: var(--gold);
+  font-size: 0.85em;
+}
+
 .challenge-banner {
   width: 100%;
   background: var(--bg-card);

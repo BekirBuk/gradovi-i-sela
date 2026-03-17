@@ -7,7 +7,8 @@ import {
   createRoom, getRoom, joinRoom, removePlayer, updateSettings,
   startRound, submitAnswers, unsubmitAnswers, allPlayersSubmitted, scoreRound,
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
-  createChallenge, voteChallenge, checkStaleChallenges, Room
+  createChallenge, voteChallenge, checkStaleChallenges,
+  getCurrentChallenger, advanceChallenger, isChallengePhaseOver, Room
 } from './game';
 
 const app = express();
@@ -256,6 +257,10 @@ io.on('connection', (socket) => {
     const room = getRoom(session.roomCode);
     if (!room) { callback?.({ success: false, error: 'Room not found' }); return; }
 
+    // Enforce turn order: only the current challenger can challenge
+    const currentChallenger = getCurrentChallenger(room);
+    if (playerId !== currentChallenger) { callback?.({ success: false, error: 'Not your turn to challenge' }); return; }
+
     // Get the answer from the last round result
     const lastResult = room.roundResults[room.roundResults.length - 1];
     if (!lastResult) { callback?.({ success: false, error: 'No round result' }); return; }
@@ -280,6 +285,25 @@ io.on('connection', (socket) => {
 
     io.to(room.code).emit('challenge-started', serializeChallenge(challenge));
     callback?.({ success: true });
+  });
+
+  socket.on('skip-challenges', () => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room) return;
+
+    const currentChallenger = getCurrentChallenger(room);
+    if (playerId !== currentChallenger) return;
+
+    advanceChallenger(room);
+    io.to(room.code).emit('challenge-turn-changed', {
+      currentChallenger: getCurrentChallenger(room),
+      challengePhaseOver: isChallengePhaseOver(room),
+      room: serializeRoom(room),
+    });
   });
 
   socket.on('vote-challenge', ({ challengeId, accept }: { challengeId: string; accept: boolean }) => {
