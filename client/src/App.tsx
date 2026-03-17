@@ -2,6 +2,7 @@ import { useGame } from './context/GameContext';
 import Lobby from './components/Lobby';
 import GameBoard from './components/GameBoard';
 import Scoreboard from './components/Scoreboard';
+import ConnectionStatus from './components/ConnectionStatus';
 
 function GameRouter() {
   const { room } = useGame();
@@ -24,6 +25,7 @@ function GameRouter() {
 export default function App() {
   return (
     <div className="app">
+      <ConnectionStatus />
       <GameRouter />
     </div>
   );

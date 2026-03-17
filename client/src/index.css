@@ -108,6 +108,51 @@ body {
   flex-direction: column;
 }
 
+/* Connection Status */
+.connection-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bg-card);
+  animation: slideDown 0.3s ease;
+}
+
+.connection-banner.disconnected {
+  background: var(--danger);
+}
+
+.connection-banner.reconnecting {
+  background: var(--warning);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 .loading {
   display: flex;
   align-items: center;

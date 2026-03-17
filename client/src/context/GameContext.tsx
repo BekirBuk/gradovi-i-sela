@@ -305,7 +305,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [socket]);
 
   const saveAnswersFn = useCallback((answers: Record<string, string>) => {
-    socket.emit('save-answers', { answers });
+    socket.volatile.emit('save-answers', { answers });
   }, [socket]);
 
   const stopRoundFn = useCallback(() => {
