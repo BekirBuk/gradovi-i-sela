@@ -220,12 +220,7 @@ io.on('connection', (socket) => {
     if (room.gameMode === 'timer') return; // Stop not allowed in timer mode
 
     io.to(room.code).emit('round-stopping', { stoppedBy: playerId });
-
-    setTimeout(() => {
-      if (room.phase === 'playing') {
-        endRound(room);
-      }
-    }, 3000);
+    endRound(room);
   });
 
   socket.on('next-round', () => {

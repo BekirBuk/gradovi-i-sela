@@ -889,10 +889,19 @@ select option {
   background: var(--bg);
 }
 
+.timer-warning {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.timer-warning::before {
+  border-color: var(--warning);
+}
+
 .timer-urgent {
   color: var(--danger);
   border-color: var(--danger);
-  animation: pulse 0.8s ease-in-out infinite;
+  animation: timerPulse 0.8s ease-in-out infinite;
 }
 
 .timer-urgent::before {
@@ -912,7 +921,7 @@ select option {
   border-color: var(--gold);
 }
 
-@keyframes pulse {
+@keyframes timerPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(0.98); }
 }

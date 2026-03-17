@@ -6,10 +6,11 @@ export default function Timer() {
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+  const warning = timeLeft <= 15 && timeLeft > 10;
   const urgent = timeLeft <= 10 && timeLeft > 0;
 
   return (
-    <div className={`timer ${urgent ? 'timer-urgent' : ''} ${roundStopping ? 'timer-stopping' : ''}`}>
+    <div className={`timer ${urgent ? 'timer-urgent' : warning ? 'timer-warning' : ''} ${roundStopping ? 'timer-stopping' : ''}`}>
       {roundStopping ? (
         <span className="timer-text">{t(lang, 'lockingAnswers')}</span>
       ) : (
