@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -45,7 +45,8 @@ export function clearSession() {
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [status, setStatus] = useState<ConnectionStatus>('disconnected');
+  const [status, setStatus] = useState<ConnectionStatus>('connected');
+  const hasConnected = useRef(false);
 
   useEffect(() => {
     const s = io(SERVER_URL, {
@@ -56,8 +57,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       timeout: 10000,
     });
 
-    s.on('connect', () => setStatus('connected'));
-    s.on('disconnect', () => setStatus('disconnected'));
+    s.on('connect', () => { hasConnected.current = true; setStatus('connected'); });
+    s.on('disconnect', () => { if (hasConnected.current) setStatus('disconnected'); });
     s.io.on('reconnect_attempt', () => setStatus('reconnecting'));
     s.io.on('reconnect', () => setStatus('connected'));
 
