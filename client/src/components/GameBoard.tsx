@@ -102,6 +102,8 @@ export default function GameBoard() {
         </div>
       </div>
 
+      <p className="game-hint">{t(lang, 'spellingHint', { letter: room.currentLetter.toUpperCase() })}</p>
+
       <div className="categories-form">
         <div className="form-margin-line" />
         {CATEGORY_ORDER.map((cat, i) => (

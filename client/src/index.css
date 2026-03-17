@@ -715,6 +715,15 @@ select option {
 }
 
 /* Categories form - notebook style */
+.game-hint {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
 .categories-form {
   position: relative;
   display: flex;

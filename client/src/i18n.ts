@@ -38,6 +38,9 @@ const translations = {
     cancelSubmission: 'Edit Answers',
     stop: 'STOP!',
 
+    // Game hints
+    spellingHint: 'Make sure your answers start with the letter "{letter}". You can challenge rejected answers after the round.',
+
     // Timer
     lockingAnswers: 'STOP! Locking answers...',
 
@@ -112,6 +115,9 @@ const translations = {
     answersSubmitted: 'Odgovori predani! Čekamo ostale...',
     cancelSubmission: 'Izmijeni Odgovore',
     stop: 'STOP!',
+
+    // Game hints
+    spellingHint: 'Pazite da odgovori počinju slovom "{letter}". Možete osporiti odbijene odgovore nakon runde.',
 
     // Timer
     lockingAnswers: 'STOP! Zaključavanje odgovora...',
