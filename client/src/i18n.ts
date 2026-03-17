@@ -35,6 +35,7 @@ const translations = {
     submitted: 'submitted',
     submitAnswers: 'Submit Answers',
     answersSubmitted: 'Answers submitted! Waiting for others...',
+    cancelSubmission: 'Edit Answers',
     stop: 'STOP!',
 
     // Timer
@@ -105,6 +106,7 @@ const translations = {
     submitted: 'predalo',
     submitAnswers: 'Predaj Odgovore',
     answersSubmitted: 'Odgovori predani! Čekamo ostale...',
+    cancelSubmission: 'Izmijeni Odgovore',
     stop: 'STOP!',
 
     // Timer

@@ -167,6 +167,13 @@ export function submitAnswers(room: Room, playerId: string, answers: Record<Cate
   return true;
 }
 
+export function unsubmitAnswers(room: Room, playerId: string): boolean {
+  if (room.phase !== 'playing') return false;
+  if (!room.submittedPlayers.has(playerId)) return false;
+  room.submittedPlayers.delete(playerId);
+  return true;
+}
+
 export function allPlayersSubmitted(room: Room): boolean {
   return room.submittedPlayers.size >= room.players.size;
 }

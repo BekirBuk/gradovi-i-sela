@@ -63,6 +63,7 @@ interface GameState {
   updateSettings: (language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop') => void;
   startGame: () => void;
   submitAnswers: (answers: Record<string, string>) => void;
+  unsubmitAnswers: () => void;
   saveAnswers: (answers: Record<string, string>) => void;
   stopRound: () => void;
   nextRound: () => void;
@@ -177,6 +178,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setTotalPlayers(data.totalPlayers);
     });
 
+    socket.on('player-unsubmitted', (data: { submittedCount: number; totalPlayers: number }) => {
+      setSubmittedCount(data.submittedCount);
+      setTotalPlayers(data.totalPlayers);
+    });
+
     socket.on('round-stopping', () => {
       setRoundStopping(true);
     });
@@ -212,6 +218,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('room-updated');
       socket.off('round-started');
       socket.off('player-submitted');
+      socket.off('player-unsubmitted');
       socket.off('round-stopping');
       socket.off('round-results');
       socket.off('challenge-started');
@@ -287,6 +294,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket.emit('submit-answers', { answers });
   }, [socket]);
 
+  const unsubmitAnswersFn = useCallback(() => {
+    socket.emit('unsubmit-answers');
+  }, [socket]);
+
   const saveAnswersFn = useCallback((answers: Record<string, string>) => {
     socket.emit('save-answers', { answers });
   }, [socket]);
@@ -338,6 +349,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       updateSettings: updateSettingsFn,
       startGame: startGameFn,
       submitAnswers: submitAnswersFn,
+      unsubmitAnswers: unsubmitAnswersFn,
       saveAnswers: saveAnswersFn,
       stopRound: stopRoundFn,
       nextRound: nextRoundFn,

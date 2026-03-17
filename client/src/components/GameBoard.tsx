@@ -16,7 +16,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function GameBoard() {
-  const { room, submitAnswers, saveAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping, lang } = useGame();
+  const { room, submitAnswers, unsubmitAnswers, saveAnswers, stopRound, submittedCount, totalPlayers, timeLeft, roundStopping, lang } = useGame();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -53,6 +53,12 @@ export default function GameBoard() {
     if (submitted) return;
     setSubmitted(true);
     submitAnswers(answers);
+  }
+
+  function handleCancel() {
+    if (!submitted || timeLeft === 0 || roundStopping) return;
+    setSubmitted(false);
+    unsubmitAnswers();
   }
 
   function handleStop() {
@@ -124,7 +130,14 @@ export default function GameBoard() {
             {t(lang, 'submitAnswers')}
           </button>
         ) : (
-          <p className="submitted-text">{t(lang, 'answersSubmitted')}</p>
+          <>
+            <p className="submitted-text">{t(lang, 'answersSubmitted')}</p>
+            {timeLeft > 0 && !roundStopping && (
+              <button className="btn btn-secondary" onClick={handleCancel}>
+                {t(lang, 'cancelSubmission')}
+              </button>
+            )}
+          </>
         )}
 
         {allFilled && !roundStopping && timeLeft > 0 && room.gameMode === 'stop' && (

@@ -5,7 +5,7 @@ import cors from 'cors';
 import { loadWordLists, CATEGORIES, Category, Language } from './validation';
 import {
   createRoom, getRoom, joinRoom, removePlayer, updateSettings,
-  startRound, submitAnswers, allPlayersSubmitted, scoreRound,
+  startRound, submitAnswers, unsubmitAnswers, allPlayersSubmitted, scoreRound,
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
   createChallenge, voteChallenge, Room
 } from './game';
@@ -188,6 +188,23 @@ io.on('connection', (socket) => {
 
     if (allPlayersSubmitted(room)) {
       endRound(room);
+    }
+  });
+
+  socket.on('unsubmit-answers', () => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room) return;
+
+    if (unsubmitAnswers(room, playerId)) {
+      io.to(room.code).emit('player-unsubmitted', {
+        playerId,
+        submittedCount: room.submittedPlayers.size,
+        totalPlayers: room.players.size,
+      });
     }
   });
 
