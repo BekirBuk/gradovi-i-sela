@@ -7,7 +7,7 @@ import {
   createRoom, getRoom, joinRoom, removePlayer, updateSettings,
   startRound, submitAnswers, unsubmitAnswers, allPlayersSubmitted, scoreRound,
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
-  createChallenge, voteChallenge, Room
+  createChallenge, voteChallenge, checkStaleChallenges, Room
 } from './game';
 
 const app = express();
@@ -248,23 +248,23 @@ io.on('connection', (socket) => {
     }, room.roundTime * 1000);
   });
 
-  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: Category }) => {
+  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: Category }, callback?: (res: { success: boolean; error?: string }) => void) => {
     const playerId = getPlayerId(socket.id);
-    if (!playerId) return;
+    if (!playerId) { callback?.({ success: false, error: 'Not connected' }); return; }
     const session = playerSessions.get(playerId);
-    if (!session) return;
+    if (!session) { callback?.({ success: false, error: 'No session' }); return; }
     const room = getRoom(session.roomCode);
-    if (!room) return;
+    if (!room) { callback?.({ success: false, error: 'Room not found' }); return; }
 
     // Get the answer from the last round result
     const lastResult = room.roundResults[room.roundResults.length - 1];
-    if (!lastResult) return;
+    if (!lastResult) { callback?.({ success: false, error: 'No round result' }); return; }
     const answerData = lastResult.answers[playerIdTarget]?.[category];
-    if (playerId !== playerIdTarget) return; // Only the answer's owner can challenge
-    if (!answerData || answerData.valid) return; // Can only challenge invalid answers
+    if (playerId !== playerIdTarget) { callback?.({ success: false, error: 'Not your answer' }); return; }
+    if (!answerData || answerData.valid) { callback?.({ success: false, error: 'Answer is already valid' }); return; }
 
     const challenge = createChallenge(room, playerIdTarget, category as Category, answerData.answer);
-    if (!challenge) return;
+    if (!challenge) { callback?.({ success: false, error: 'Challenge already exists' }); return; }
 
     // Auto-resolve if only 1 player in the room (solo testing)
     if (room.players.size === 1) {
@@ -274,10 +274,12 @@ io.on('connection', (socket) => {
         result: lastResult,
         room: serializeRoom(room),
       });
+      callback?.({ success: true });
       return;
     }
 
     io.to(room.code).emit('challenge-started', serializeChallenge(challenge));
+    callback?.({ success: true });
   });
 
   socket.on('vote-challenge', ({ challengeId, accept }: { challengeId: string; accept: boolean }) => {
@@ -331,6 +333,16 @@ io.on('connection', (socket) => {
     socketToPlayer.delete(socket.id);
     if (room) {
       io.to(room.code).emit('room-updated', serializeRoom(room));
+      // Resolve any challenges that are now stale due to player leaving
+      const resolved = checkStaleChallenges(room);
+      for (const challenge of resolved) {
+        const lastResult = room.roundResults[room.roundResults.length - 1];
+        io.to(room.code).emit('challenge-resolved', {
+          challenge: serializeChallenge(challenge),
+          result: lastResult,
+          room: serializeRoom(room),
+        });
+      }
       if (room.phase === 'playing' && allPlayersSubmitted(room)) {
         endRound(room);
       }
@@ -361,6 +373,15 @@ io.on('connection', (socket) => {
         socketToPlayer.delete(socket.id);
         if (room) {
           io.to(room.code).emit('room-updated', serializeRoom(room));
+          const resolved = checkStaleChallenges(room);
+          for (const challenge of resolved) {
+            const lastResult = room.roundResults[room.roundResults.length - 1];
+            io.to(room.code).emit('challenge-resolved', {
+              challenge: serializeChallenge(challenge),
+              result: lastResult,
+              room: serializeRoom(room),
+            });
+          }
           if (room.phase === 'playing' && allPlayersSubmitted(room)) {
             endRound(room);
           }

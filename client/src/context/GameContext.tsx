@@ -320,7 +320,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [socket]);
 
   const challengeAnswerFn = useCallback((playerIdTarget: string, category: string) => {
-    socket.emit('challenge-answer', { playerIdTarget, category });
+    socket.emit('challenge-answer', { playerIdTarget, category }, (res: { success: boolean; error?: string }) => {
+      if (!res.success) {
+        console.warn('Challenge failed:', res.error);
+      }
+    });
   }, [socket]);
 
   const voteChallengeFn = useCallback((challengeId: string, accept: boolean) => {

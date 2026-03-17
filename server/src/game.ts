@@ -272,13 +272,38 @@ export function createChallenge(room: Room, playerId: string, category: Category
   return challenge;
 }
 
+export function checkStaleChallenges(room: Room): Challenge[] {
+  const resolved: Challenge[] = [];
+  for (const challenge of room.activeChallenges.values()) {
+    if (challenge.resolved) continue;
+    // Count only votes from players still in the room
+    const relevantVotes = new Map<string, boolean>();
+    for (const [voterId, vote] of challenge.votes) {
+      if (room.players.has(voterId)) {
+        relevantVotes.set(voterId, vote);
+      }
+    }
+    challenge.votes = relevantVotes;
+    if (challenge.votes.size >= room.players.size) {
+      challenge.resolved = true;
+      challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
+      if (challenge.accepted) {
+        addWord(challenge.answer, challenge.category, room.language);
+        recalculateLastRound(room);
+      }
+      resolved.push(challenge);
+    }
+  }
+  return resolved;
+}
+
 export function voteChallenge(room: Room, challengeId: string, voterId: string, accept: boolean): Challenge | null {
   const challenge = room.activeChallenges.get(challengeId);
   if (!challenge || challenge.resolved) return null;
 
   challenge.votes.set(voterId, accept);
 
-  // Check if all players have voted
+  // Check if all current players have voted
   if (challenge.votes.size >= room.players.size) {
     challenge.resolved = true;
     challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
