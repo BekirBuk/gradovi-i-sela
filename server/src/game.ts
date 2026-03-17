@@ -1,4 +1,4 @@
-import { validateAnswer, addWord, getValidLetters, CATEGORIES, getCategoryLabels, Category, Language } from './validation';
+import { validateAnswer, addWord, getValidLetters, normalize, CATEGORIES, getCategoryLabels, Category, Language } from './validation';
 
 export interface Player {
   id: string;
@@ -7,7 +7,7 @@ export interface Player {
 }
 
 export interface RoundAnswers {
-  [playerId: string]: Record<Category, string>;
+  [playerId: string]: Record<string, string>;
 }
 
 export interface RoundResult {
@@ -50,6 +50,8 @@ export interface Room {
   activeChallenges: Map<string, Challenge>;
   challengeOrder: string[]; // player IDs who have invalid answers
   currentChallengerIndex: number;
+  categoryMode: 'original' | 'custom';
+  customCategories: string[];
 }
 
 const rooms = new Map<string, Room>();
@@ -88,6 +90,8 @@ export function createRoom(hostId: string, hostName: string, language?: Language
     activeChallenges: new Map(),
     challengeOrder: [],
     currentChallengerIndex: 0,
+    categoryMode: 'original',
+    customCategories: [],
   };
   rooms.set(code, room);
   return room;
@@ -137,7 +141,12 @@ export function removePlayer(roomCode: string, playerId: string): Room | null {
   return room;
 }
 
-export function updateSettings(roomCode: string, language: Language, totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop'): Room | null {
+export function getActiveCategories(room: Room): string[] {
+  if (room.categoryMode === 'custom') return room.customCategories;
+  return CATEGORIES as unknown as string[];
+}
+
+export function updateSettings(roomCode: string, language: Language, totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop', categoryMode?: 'original' | 'custom', customCategories?: string[]): Room | null {
   const room = rooms.get(roomCode);
   if (!room || room.phase !== 'lobby') return null;
   room.language = language;
@@ -147,6 +156,12 @@ export function updateSettings(roomCode: string, language: Language, totalRounds
   }
   if (gameMode !== undefined) {
     room.gameMode = gameMode;
+  }
+  if (categoryMode !== undefined) {
+    room.categoryMode = categoryMode;
+  }
+  if (customCategories !== undefined) {
+    room.customCategories = customCategories.slice(0, 10);
   }
   return room;
 }
@@ -171,7 +186,7 @@ export function startRound(room: Room): string {
   return room.currentLetter;
 }
 
-export function submitAnswers(room: Room, playerId: string, answers: Record<Category, string>): boolean {
+export function submitAnswers(room: Room, playerId: string, answers: Record<string, string>): boolean {
   if (room.phase !== 'playing') return false;
   if (room.submittedPlayers.has(playerId)) return false;
 
@@ -199,10 +214,23 @@ export function scoreRound(room: Room): RoundResult {
   };
 
   const playerIds = Array.from(room.players.keys());
+  const categories = getActiveCategories(room);
+  const isCustom = room.categoryMode === 'custom';
+
+  function isValidAnswer(answer: string, cat: string): boolean {
+    if (isCustom) {
+      // Custom mode: valid if non-empty and starts with correct letter
+      if (!answer || !answer.trim()) return false;
+      const normalizedAnswer = normalize(answer);
+      const normalizedLetter = normalize(room.currentLetter);
+      return normalizedAnswer.startsWith(normalizedLetter);
+    }
+    return validateAnswer(answer, cat as Category, room.currentLetter, room.language);
+  }
 
   // Collect all answers per category for duplicate detection
   const answersByCategory: Record<string, Map<string, string[]>> = {};
-  for (const cat of CATEGORIES) {
+  for (const cat of categories) {
     answersByCategory[cat] = new Map();
     for (const pid of playerIds) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
@@ -220,9 +248,9 @@ export function scoreRound(room: Room): RoundResult {
     result.answers[pid] = {};
     result.scores[pid] = 0;
 
-    for (const cat of CATEGORIES) {
+    for (const cat of categories) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
-      const valid = validateAnswer(answer, cat, room.currentLetter, room.language);
+      const valid = isValidAnswer(answer, cat);
 
       let points = 0;
       if (valid) {
@@ -230,18 +258,16 @@ export function scoreRound(room: Room): RoundResult {
         let validAnswerCount = 0;
         for (const otherId of playerIds) {
           const otherAnswer = room.roundAnswers[otherId]?.[cat] || '';
-          if (validateAnswer(otherAnswer, cat, room.currentLetter, room.language)) {
+          if (isValidAnswer(otherAnswer, cat)) {
             validAnswerCount++;
           }
         }
 
         if (validAnswerCount === 1) {
-          // Only player with a valid answer in this category
           points = 20;
         } else {
           const normalized = answer.toLowerCase().trim();
           const playersWithSame = answersByCategory[cat].get(normalized) || [];
-          // Unique answer vs duplicate
           points = playersWithSame.length > 1 ? 5 : 10;
         }
       }
@@ -262,7 +288,7 @@ export function scoreRound(room: Room): RoundResult {
 
   // Compute challenge order: players who have at least one invalid answer with text
   room.challengeOrder = playerIds.filter(pid => {
-    return CATEGORIES.some(cat => {
+    return categories.some(cat => {
       const r = result.answers[pid]?.[cat];
       return r && !r.valid && r.answer.trim();
     });
@@ -289,10 +315,10 @@ export function isChallengePhaseOver(room: Room): boolean {
 export function hasRemainingChallenges(room: Room, playerId: string): boolean {
   const lastResult = room.roundResults[room.roundResults.length - 1];
   if (!lastResult) return false;
-  return CATEGORIES.some(cat => {
+  const categories = getActiveCategories(room);
+  return categories.some(cat => {
     const r = lastResult.answers[playerId]?.[cat];
     if (!r || r.valid || !r.answer.trim()) return false;
-    // Already challenged (resolved or active)
     if (room.activeChallenges.has(`${playerId}-${cat}`)) return false;
     return true;
   });
@@ -373,6 +399,18 @@ function recalculateLastRound(room: Room): void {
   if (!result) return;
 
   const playerIds = Array.from(room.players.keys());
+  const categories = getActiveCategories(room);
+  const isCustom = room.categoryMode === 'custom';
+
+  function isValidAnswer(answer: string, cat: string): boolean {
+    if (isCustom) {
+      if (!answer || !answer.trim()) return false;
+      const na = normalize(answer);
+      const nl = normalize(room.currentLetter);
+      return na.startsWith(nl);
+    }
+    return validateAnswer(answer, cat as Category, result.letter, room.language);
+  }
 
   // Reset player total scores by subtracting old round scores
   for (const pid of playerIds) {
@@ -384,7 +422,7 @@ function recalculateLastRound(room: Room): void {
 
   // Recalculate with duplicate detection
   const answersByCategory: Record<string, Map<string, string[]>> = {};
-  for (const cat of CATEGORIES) {
+  for (const cat of categories) {
     answersByCategory[cat] = new Map();
     for (const pid of playerIds) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
@@ -400,16 +438,16 @@ function recalculateLastRound(room: Room): void {
 
   for (const pid of playerIds) {
     result.scores[pid] = 0;
-    for (const cat of CATEGORIES) {
+    for (const cat of categories) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
-      const valid = validateAnswer(answer, cat, result.letter, room.language);
+      const valid = isValidAnswer(answer, cat);
 
       let points = 0;
       if (valid) {
         let validAnswerCount = 0;
         for (const otherId of playerIds) {
           const otherAnswer = room.roundAnswers[otherId]?.[cat] || '';
-          if (validateAnswer(otherAnswer, cat, result.letter, room.language)) {
+          if (isValidAnswer(otherAnswer, cat)) {
             validAnswerCount++;
           }
         }
@@ -463,6 +501,7 @@ export function resetGame(room: Room): void {
   room.activeChallenges = new Map();
   room.challengeOrder = [];
   room.currentChallengerIndex = 0;
+  // Keep categoryMode and customCategories as settings
   for (const player of room.players.values()) {
     player.totalScore = 0;
   }
@@ -481,7 +520,12 @@ export function serializeRoom(room: Room) {
     players: Array.from(room.players.values()),
     currentLetter: room.currentLetter,
     submittedCount: room.submittedPlayers.size,
-    categoryLabels: getCategoryLabels(room.language),
+    categoryMode: room.categoryMode,
+    customCategories: room.customCategories,
+    categoryLabels: room.categoryMode === 'custom'
+      ? Object.fromEntries(room.customCategories.map(c => [c, c]))
+      : getCategoryLabels(room.language),
+    categories: getActiveCategories(room),
     currentChallenger: getCurrentChallenger(room),
     challengePhaseOver: isChallengePhaseOver(room),
   };

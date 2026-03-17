@@ -29,7 +29,10 @@ export interface RoomState {
   players: Player[];
   currentLetter: string;
   submittedCount: number;
+  categoryMode: 'original' | 'custom';
+  customCategories: string[];
   categoryLabels: Record<string, string>;
+  categories: string[];
 }
 
 export interface ChallengeState {
@@ -60,7 +63,7 @@ interface GameState {
   createRoom: (name: string) => Promise<RoomState>;
   joinRoom: (code: string, name: string) => Promise<RoomState>;
   leaveRoom: () => void;
-  updateSettings: (language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop') => void;
+  updateSettings: (language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop', categoryMode?: 'original' | 'custom', customCategories?: string[]) => void;
   startGame: () => void;
   submitAnswers: (answers: Record<string, string>) => void;
   unsubmitAnswers: () => void;
@@ -288,8 +291,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setResolvedChallenges([]);
   }, [socket]);
 
-  const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop') => {
-    socket.emit('update-settings', { language, totalRounds, roundTime, gameMode });
+  const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop', categoryMode?: 'original' | 'custom', customCategories?: string[]) => {
+    socket.emit('update-settings', { language, totalRounds, roundTime, gameMode, categoryMode, customCategories });
   }, [socket]);
 
   const startGameFn = useCallback(() => {

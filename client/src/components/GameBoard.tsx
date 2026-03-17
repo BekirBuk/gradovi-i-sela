@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { t } from '../i18n';
 import Timer from './Timer';
 
-const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
+const DEFAULT_CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
 
 const CATEGORY_ICONS: Record<string, string> = {
   countries: '\u{1F3F3}',
@@ -41,7 +41,9 @@ export default function GameBoard() {
 
   if (!room) return null;
 
+  const categoryOrder = room.categories || DEFAULT_categoryOrder;
   const labels = room.categoryLabels;
+  const isCustom = room.categoryMode === 'custom';
 
   function handleChange(cat: string, value: string) {
     const updated = { ...answers, [cat]: value };
@@ -72,7 +74,7 @@ export default function GameBoard() {
   function handleKeyDown(e: React.KeyboardEvent, index: number) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (index < CATEGORY_ORDER.length - 1) {
+      if (index < categoryOrder.length - 1) {
         inputRefs.current[index + 1]?.focus();
       } else {
         handleSubmit();
@@ -80,7 +82,7 @@ export default function GameBoard() {
     }
   }
 
-  const allFilled = CATEGORY_ORDER.every(cat => answers[cat]?.trim());
+  const allFilled = categoryOrder.every(cat => answers[cat]?.trim());
   const disabled = submitted || timeLeft === 0;
 
   return (
@@ -103,13 +105,14 @@ export default function GameBoard() {
       </div>
 
       <p className="game-hint">{t(lang, 'spellingHint', { letter: room.currentLetter.toUpperCase() })}</p>
+      {isCustom && <p className="game-hint game-hint-custom">{t(lang, 'customCategoryReminder')}</p>}
 
       <div className="categories-form">
         <div className="form-margin-line" />
-        {CATEGORY_ORDER.map((cat, i) => (
+        {categoryOrder.map((cat, i) => (
           <div key={cat} className="category-row">
             <label>
-              <span className="cat-icon">{CATEGORY_ICONS[cat]}</span>
+              {CATEGORY_ICONS[cat] && <span className="cat-icon">{CATEGORY_ICONS[cat]}</span>}
               {labels[cat] || cat}
             </label>
             <input

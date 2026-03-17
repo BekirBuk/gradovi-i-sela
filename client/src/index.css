@@ -652,6 +652,81 @@ select option {
   color: var(--bg-card);
 }
 
+.custom-categories {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-cat-input {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-cat-input input {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.custom-cat-input .btn {
+  padding: 8px 14px;
+  font-size: 1rem;
+  min-width: 40px;
+}
+
+.custom-cat-count {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.custom-cat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-cat-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px 8px 4px 12px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.custom-cat-tag button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.custom-cat-tag button:hover {
+  color: var(--danger);
+}
+
+.custom-cat-warning {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--warning);
+  line-height: 1.4;
+}
+
+.game-hint-custom {
+  color: var(--warning);
+  font-weight: 500;
+}
+
 .setting-tooltip {
   flex-basis: 100%;
   font-size: 0.8rem;

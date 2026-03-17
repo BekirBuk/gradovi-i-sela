@@ -9,7 +9,7 @@ import {
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
   createChallenge, voteChallenge, checkStaleChallenges,
   getCurrentChallenger, advanceChallenger, isChallengePhaseOver,
-  hasRemainingChallenges, Room
+  hasRemainingChallenges, getActiveCategories, Room
 } from './game';
 
 const app = express();
@@ -44,13 +44,14 @@ function endRound(room: Room) {
   }
 
   // Auto-submit empty answers for players who didn't submit
+  const categories = getActiveCategories(room);
   for (const [pid] of room.players) {
     if (!room.submittedPlayers.has(pid)) {
-      const emptyAnswers: Record<Category, string> = {} as Record<Category, string>;
-      for (const cat of CATEGORIES) {
+      const emptyAnswers: Record<string, string> = {};
+      for (const cat of categories) {
         emptyAnswers[cat] = room.roundAnswers[pid]?.[cat] || '';
       }
-      submitAnswers(room, pid, emptyAnswers);
+      submitAnswers(room, pid, emptyAnswers as Record<Category, string>);
     }
   }
 
@@ -128,12 +129,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('update-settings', ({ language, totalRounds, roundTime, gameMode }: { language: Language; totalRounds: number; roundTime?: number; gameMode?: 'timer' | 'stop' }) => {
+  socket.on('update-settings', ({ language, totalRounds, roundTime, gameMode, categoryMode, customCategories }: { language: Language; totalRounds: number; roundTime?: number; gameMode?: 'timer' | 'stop'; categoryMode?: 'original' | 'custom'; customCategories?: string[] }) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) return;
     const session = playerSessions.get(playerId);
     if (!session) return;
-    const room = updateSettings(session.roomCode, language, totalRounds, roundTime, gameMode);
+    const room = updateSettings(session.roomCode, language, totalRounds, roundTime, gameMode, categoryMode, customCategories);
     if (room) {
       io.to(room.code).emit('room-updated', serializeRoom(room));
     }

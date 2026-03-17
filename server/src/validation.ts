@@ -32,7 +32,7 @@ export function getCategoryLabels(lang: Language): Record<Category, string> {
 }
 
 // Diacritics normalization for comparison
-function normalize(str: string): string {
+export function normalize(str: string): string {
   return str
     .toLowerCase()
     .trim()

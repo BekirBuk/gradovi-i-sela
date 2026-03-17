@@ -33,6 +33,7 @@ export default function Lobby() {
   const [view, setView] = useState<'menu' | 'create' | 'join'>('menu');
   const [tooltip, setTooltip] = useState<string | null>(null);
   const [page, setPage] = useState<'about' | 'rules' | 'privacy' | null>(null);
+  const [newCategory, setNewCategory] = useState('');
 
   const isHost = room?.hostId === myId;
 
@@ -130,7 +131,66 @@ export default function Lobby() {
               </select>
               {tooltip === 'gameMode' && <div className="setting-tooltip">{t(lang, 'gameModeTooltip')}</div>}
             </div>
-            <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1}>
+            <div className="setting-row">
+              <label>
+                {t(lang, 'categoryMode')}
+                <span className="setting-tooltip-trigger" onClick={() => setTooltip(tooltip === 'categoryMode' ? null : 'categoryMode')}>?</span>
+              </label>
+              <select
+                value={room.categoryMode}
+                onChange={e => updateSettings(room.language, room.totalRounds, room.roundTime, room.gameMode, e.target.value as 'original' | 'custom', room.customCategories)}
+              >
+                <option value="original">{t(lang, 'categoryOriginal')}</option>
+                <option value="custom">{t(lang, 'categoryCustom')}</option>
+              </select>
+              {tooltip === 'categoryMode' && <div className="setting-tooltip">{t(lang, 'categoryModeTooltip')}</div>}
+            </div>
+            {room.categoryMode === 'custom' && (
+              <div className="custom-categories">
+                <div className="custom-cat-input">
+                  <input
+                    type="text"
+                    placeholder={t(lang, 'addCategory')}
+                    value={newCategory}
+                    onChange={e => setNewCategory(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newCategory.trim() && room.customCategories.length < 10) {
+                        updateSettings(room.language, room.totalRounds, room.roundTime, room.gameMode, 'custom', [...room.customCategories, newCategory.trim()]);
+                        setNewCategory('');
+                      }
+                    }}
+                    maxLength={30}
+                    disabled={room.customCategories.length >= 10}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (newCategory.trim() && room.customCategories.length < 10) {
+                        updateSettings(room.language, room.totalRounds, room.roundTime, room.gameMode, 'custom', [...room.customCategories, newCategory.trim()]);
+                        setNewCategory('');
+                      }
+                    }}
+                    disabled={!newCategory.trim() || room.customCategories.length >= 10}
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="custom-cat-count">{room.customCategories.length}/10</p>
+                <div className="custom-cat-list">
+                  {room.customCategories.map((cat, i) => (
+                    <div key={i} className="custom-cat-tag">
+                      <span>{cat}</span>
+                      <button onClick={() => {
+                        const updated = room.customCategories.filter((_, j) => j !== i);
+                        updateSettings(room.language, room.totalRounds, room.roundTime, room.gameMode, 'custom', updated);
+                      }}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+                <p className="custom-cat-warning">{t(lang, 'customCategoryWarning')}</p>
+              </div>
+            )}
+            <button className="btn btn-primary btn-large" onClick={startGame} disabled={room.players.length < 1 || (room.categoryMode === 'custom' && room.customCategories.length === 0)}>
               {t(lang, 'beginExpedition')}
             </button>
           </div>

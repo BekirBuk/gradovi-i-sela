@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext';
 import { t } from '../i18n';
 
-const CATEGORY_ORDER = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
+const DEFAULT_categoryOrder = ['countries', 'cities', 'rivers', 'mountains', 'animals', 'plants', 'names'];
 
 export default function Scoreboard() {
   const {
@@ -13,6 +13,7 @@ export default function Scoreboard() {
 
   const isHost = room.hostId === myId;
   const labels = room.categoryLabels;
+  const categoryOrder = room.categories || DEFAULT_categoryOrder;
   const sortedPlayers = [...room.players].sort((a, b) => b.totalScore - a.totalScore);
 
   const currentChallenger = room.currentChallenger;
@@ -114,7 +115,7 @@ export default function Scoreboard() {
           <thead>
             <tr>
               <th>Player</th>
-              {CATEGORY_ORDER.map(cat => (
+              {categoryOrder.map(cat => (
                 <th key={cat}>{labels[cat] || cat}</th>
               ))}
               <th>{gameOver ? 'Total' : t(lang, 'round')}</th>
@@ -131,7 +132,7 @@ export default function Scoreboard() {
                     {player.name}
                     {isCurrentChallenger && <span className="challenger-indicator"> &#9998;</span>}
                   </td>
-                  {CATEGORY_ORDER.map(cat => {
+                  {categoryOrder.map(cat => {
                     const r = playerResults?.[cat];
                     if (!r) return <td key={cat} className="answer empty">-</td>;
 
@@ -186,7 +187,7 @@ export default function Scoreboard() {
                 <span className={`score ${gameOver ? 'total-score' : 'round-score'}`}>{gameOver ? player.totalScore : roundScore}</span>
               </div>
               <div className="result-card-answers">
-                {CATEGORY_ORDER.map(cat => {
+                {categoryOrder.map(cat => {
                   const r = playerResults?.[cat];
                   const challenged = isChallenged(player.id, cat);
                   const wasAccepted = resolvedChallenges.find(
