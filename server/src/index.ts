@@ -8,7 +8,8 @@ import {
   startRound, submitAnswers, unsubmitAnswers, allPlayersSubmitted, scoreRound,
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
   createChallenge, voteChallenge, checkStaleChallenges,
-  getCurrentChallenger, advanceChallenger, isChallengePhaseOver, Room
+  getCurrentChallenger, advanceChallenger, isChallengePhaseOver,
+  hasRemainingChallenges, Room
 } from './game';
 
 const app = express();
@@ -319,6 +320,11 @@ io.on('connection', (socket) => {
 
     if (challenge.resolved) {
       const lastResult = room.roundResults[room.roundResults.length - 1];
+      // Auto-advance if current challenger has no more answers to challenge
+      const currentChallenger = getCurrentChallenger(room);
+      if (currentChallenger && !hasRemainingChallenges(room, currentChallenger)) {
+        advanceChallenger(room);
+      }
       io.to(room.code).emit('challenge-resolved', {
         challenge: serializeChallenge(challenge),
         result: lastResult,

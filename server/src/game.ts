@@ -286,6 +286,18 @@ export function isChallengePhaseOver(room: Room): boolean {
   return room.currentChallengerIndex >= room.challengeOrder.length;
 }
 
+export function hasRemainingChallenges(room: Room, playerId: string): boolean {
+  const lastResult = room.roundResults[room.roundResults.length - 1];
+  if (!lastResult) return false;
+  return CATEGORIES.some(cat => {
+    const r = lastResult.answers[playerId]?.[cat];
+    if (!r || r.valid || !r.answer.trim()) return false;
+    // Already challenged (resolved or active)
+    if (room.activeChallenges.has(`${playerId}-${cat}`)) return false;
+    return true;
+  });
+}
+
 export function createChallenge(room: Room, playerId: string, category: Category, answer: string): Challenge | null {
   if (room.phase !== 'scoring' && room.phase !== 'finished') return null;
 
