@@ -1,4 +1,5 @@
 import { validateAnswer, addWord, getValidLetters, normalize, CATEGORIES, getCategoryLabels, Category, Language } from './validation';
+import { shouldAutoApprove, recordChallengeOutcome } from './db';
 
 export interface Player {
   id: string;
@@ -52,6 +53,7 @@ export interface Room {
   currentChallengerIndex: number;
   categoryMode: 'original' | 'custom';
   customCategories: string[];
+  autoApprovals?: Set<string>;
 }
 
 const rooms = new Map<string, Room>();
@@ -206,7 +208,9 @@ export function allPlayersSubmitted(room: Room): boolean {
   return room.submittedPlayers.size >= room.players.size;
 }
 
-export function scoreRound(room: Room): RoundResult {
+export function scoreRound(room: Room, autoApprovals?: Set<string>): RoundResult {
+  room.autoApprovals = autoApprovals;
+
   const result: RoundResult = {
     letter: room.currentLetter,
     answers: {},
@@ -217,9 +221,9 @@ export function scoreRound(room: Room): RoundResult {
   const categories = getActiveCategories(room);
   const isCustom = room.categoryMode === 'custom';
 
-  function isValidAnswer(answer: string, cat: string): boolean {
+  function isValidAnswer(answer: string, cat: string, pid?: string): boolean {
+    if (pid && autoApprovals?.has(`${pid}-${cat}`)) return true;
     if (isCustom) {
-      // Custom mode: all answers are invalid (require manual approval via challenges)
       return false;
     }
     return validateAnswer(answer, cat as Category, room.currentLetter, room.language);
@@ -247,7 +251,7 @@ export function scoreRound(room: Room): RoundResult {
 
     for (const cat of categories) {
       const answer = room.roundAnswers[pid]?.[cat] || '';
-      const valid = isValidAnswer(answer, cat);
+      const valid = isValidAnswer(answer, cat, pid);
 
       let points = 0;
       if (valid) {
@@ -255,7 +259,7 @@ export function scoreRound(room: Room): RoundResult {
         let validAnswerCount = 0;
         for (const otherId of playerIds) {
           const otherAnswer = room.roundAnswers[otherId]?.[cat] || '';
-          if (isValidAnswer(otherAnswer, cat)) {
+          if (isValidAnswer(otherAnswer, cat, otherId)) {
             validAnswerCount++;
           }
         }
@@ -293,6 +297,34 @@ export function scoreRound(room: Room): RoundResult {
   room.currentChallengerIndex = 0;
 
   return result;
+}
+
+export async function computeAutoApprovals(room: Room): Promise<Set<string>> {
+  const autoApproved = new Set<string>();
+  const categories = getActiveCategories(room);
+  const playerIds = Array.from(room.players.keys());
+  const language = room.categoryMode === 'custom' ? '__custom__' : room.language;
+
+  const checks: Promise<void>[] = [];
+  for (const pid of playerIds) {
+    for (const cat of categories) {
+      const answer = room.roundAnswers[pid]?.[cat] || '';
+      if (!answer.trim()) continue;
+
+      // Only check DB for answers that would otherwise be invalid
+      const wouldBeValid = room.categoryMode !== 'custom' &&
+        validateAnswer(answer, cat as Category, room.currentLetter, room.language);
+      if (wouldBeValid) continue;
+
+      checks.push(
+        shouldAutoApprove(answer, cat, language).then(approved => {
+          if (approved) autoApproved.add(`${pid}-${cat}`);
+        })
+      );
+    }
+  }
+  await Promise.all(checks);
+  return autoApproved;
 }
 
 export function getCurrentChallenger(room: Room): string | null {
@@ -359,6 +391,13 @@ export function checkStaleChallenges(room: Room): Challenge[] {
     if (challenge.votes.size >= room.players.size) {
       challenge.resolved = true;
       challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
+
+      const language = room.categoryMode === 'custom' ? '__custom__' : room.language;
+      recordChallengeOutcome(
+        challenge.answer, challenge.category, language,
+        challenge.accepted, challenge.votes.size
+      ).catch(err => console.warn('Failed to record challenge outcome:', err.message));
+
       if (challenge.accepted) {
         if (room.categoryMode === 'original') {
           addWord(challenge.answer, challenge.category as Category, room.language);
@@ -381,6 +420,13 @@ export function voteChallenge(room: Room, challengeId: string, voterId: string, 
   if (challenge.votes.size >= room.players.size) {
     challenge.resolved = true;
     challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
+
+    // Record outcome in community database
+    const language = room.categoryMode === 'custom' ? '__custom__' : room.language;
+    recordChallengeOutcome(
+      challenge.answer, challenge.category, language,
+      challenge.accepted, challenge.votes.size
+    ).catch(err => console.warn('Failed to record challenge outcome:', err.message));
 
     if (challenge.accepted) {
       // Add word to word list (only for original categories)
@@ -413,6 +459,7 @@ function recalculateLastRound(room: Room): void {
 
   function isValidAnswer(answer: string, cat: string, pid?: string): boolean {
     if (pid && acceptedOverrides.has(`${pid}-${cat}`)) return true;
+    if (pid && room.autoApprovals?.has(`${pid}-${cat}`)) return true;
     if (isCustom) {
       // Custom mode: only valid if approved via challenge
       return false;
