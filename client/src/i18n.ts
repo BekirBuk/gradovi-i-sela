@@ -62,7 +62,7 @@ const translations = {
     waitingForNextRound: 'Waiting for host to start next round...',
 
     // Challenge
-    challengeHint: 'Our database cannot cover every valid answer. If your answer was wrongly rejected, click the ? to request approval from all players.',
+    challengeHint: 'Our word lists cannot cover every valid answer. If your answer was wrongly rejected, click the ? to request approval from all players.',
     challengeTurn: '{name}\'s turn to challenge',
     challengeYourTurn: 'Your turn! Challenge any rejected answers or press Done.',
     skipChallenges: 'Done',
@@ -151,7 +151,7 @@ const translations = {
     waitingForNextRound: 'Čekamo domaćina za sljedeću rundu...',
 
     // Challenge
-    challengeHint: 'Naša baza podataka ne pokriva sve moguće odgovore. Ako je vaš odgovor pogrešno odbijen, kliknite ? da zatražite odobrenje od svih igrača.',
+    challengeHint: 'Naše liste riječi ne pokrivaju sve moguće odgovore. Ako je vaš odgovor pogrešno odbijen, kliknite ? da zatražite odobrenje od svih igrača.',
     challengeTurn: '{name} na redu za izazov',
     challengeYourTurn: 'Vaš red! Osporite odbijene odgovore ili pritisnite Gotovo.',
     skipChallenges: 'Gotovo',

@@ -9,9 +9,8 @@ import {
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
   createChallenge, voteChallenge, checkStaleChallenges,
   getCurrentChallenger, advanceChallenger, isChallengePhaseOver,
-  hasRemainingChallenges, getActiveCategories, computeAutoApprovals, Room
+  hasRemainingChallenges, getActiveCategories, Room
 } from './game';
-import { initDatabase } from './db';
 
 const app = express();
 app.use(cors());
@@ -38,7 +37,7 @@ function getPlayerId(socketId: string): string | undefined {
   return socketToPlayer.get(socketId);
 }
 
-async function endRound(room: Room) {
+function endRound(room: Room) {
   if (room.timer) {
     clearTimeout(room.timer);
     room.timer = null;
@@ -56,8 +55,7 @@ async function endRound(room: Room) {
     }
   }
 
-  const autoApprovals = await computeAutoApprovals(room);
-  const result = scoreRound(room, autoApprovals);
+  const result = scoreRound(room);
   const gameOver = isGameOver(room);
   if (gameOver) finishGame(room);
 
@@ -422,19 +420,10 @@ io.on('connection', (socket) => {
   });
 });
 
-// Load word lists and initialize database, then start server
+// Load word lists, then start server
 loadWordLists();
 
 const PORT = process.env.PORT || 3001;
-initDatabase()
-  .then(() => {
-    httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.warn('Database init failed, starting without community DB:', err.message);
-    httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} (no community DB)`);
-    });
-  });
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
