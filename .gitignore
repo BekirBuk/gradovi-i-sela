@@ -3,10 +3,6 @@ dist
 .env
 .claude/
 
-# Playwright (test suite kept local-only, not part of this repo)
-/playwright.config.ts
+# Playwright test suite — self-contained (own package.json) & kept local-only,
+# not part of this repo. Everything lives under tests/.
 /tests/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
