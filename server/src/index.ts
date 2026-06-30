@@ -7,9 +7,9 @@ import {
   createRoom, getRoom, joinRoom, removePlayer, updateSettings,
   startRound, submitAnswers, unsubmitAnswers, allPlayersSubmitted, scoreRound,
   isGameOver, finishGame, resetGame, serializeRoom, serializeChallenge,
-  createChallenge, voteChallenge, checkStaleChallenges,
-  getCurrentChallenger, advanceChallenger, isChallengePhaseOver,
-  hasRemainingChallenges, getActiveCategories, Room
+  voteChallenge, checkStaleChallenges, challengeTally,
+  advanceToNextActionablePlayer, currentReviewComplete, forceResolveCurrent,
+  getActiveCategories, Room
 } from './game';
 
 const app = express();
@@ -56,6 +56,9 @@ function endRound(room: Room) {
   }
 
   const result = scoreRound(room);
+  // Set up the review rotation: prepare the first on-stage player's items and
+  // skip past anyone with nothing to review (and auto-resolve in solo rooms).
+  advanceToNextActionablePlayer(room);
   const gameOver = isGameOver(room);
   if (gameOver) finishGame(room);
 
@@ -246,45 +249,9 @@ io.on('connection', (socket) => {
     }, room.roundTime * 1000);
   });
 
-  socket.on('challenge-answer', ({ playerIdTarget, category }: { playerIdTarget: string; category: string }, callback?: (res: { success: boolean; error?: string }) => void) => {
-    const playerId = getPlayerId(socket.id);
-    if (!playerId) { callback?.({ success: false, error: 'Not connected' }); return; }
-    const session = playerSessions.get(playerId);
-    if (!session) { callback?.({ success: false, error: 'No session' }); return; }
-    const room = getRoom(session.roomCode);
-    if (!room) { callback?.({ success: false, error: 'Room not found' }); return; }
-
-    // Enforce turn order: only the current challenger can challenge
-    const currentChallenger = getCurrentChallenger(room);
-    if (playerId !== currentChallenger) { callback?.({ success: false, error: 'Not your turn to challenge' }); return; }
-
-    // Get the answer from the last round result
-    const lastResult = room.roundResults[room.roundResults.length - 1];
-    if (!lastResult) { callback?.({ success: false, error: 'No round result' }); return; }
-    const answerData = lastResult.answers[playerIdTarget]?.[category];
-    if (playerId !== playerIdTarget) { callback?.({ success: false, error: 'Not your answer' }); return; }
-    if (!answerData || answerData.valid) { callback?.({ success: false, error: 'Answer is already valid' }); return; }
-
-    const challenge = createChallenge(room, playerIdTarget, category, answerData.answer);
-    if (!challenge) { callback?.({ success: false, error: 'Challenge already exists' }); return; }
-
-    // Auto-resolve if only 1 player in the room (solo testing)
-    if (room.players.size === 1) {
-      voteChallenge(room, challenge.id, playerId, true);
-      io.to(room.code).emit('challenge-resolved', {
-        challenge: serializeChallenge(challenge),
-        result: lastResult,
-        room: serializeRoom(room),
-      });
-      callback?.({ success: true });
-      return;
-    }
-
-    io.to(room.code).emit('challenge-started', serializeChallenge(challenge));
-    callback?.({ success: true });
-  });
-
-  socket.on('skip-challenges', () => {
+  // A player (not the answer's owner) votes ✓/✗ on one of the on-stage
+  // player's unconfirmed answers. Majority of non-owner players decides.
+  socket.on('vote-challenge', ({ targetPlayerId, category, accept }: { targetPlayerId: string; category: string; accept: boolean }) => {
     const playerId = getPlayerId(socket.id);
     if (!playerId) return;
     const session = playerSessions.get(playerId);
@@ -292,48 +259,53 @@ io.on('connection', (socket) => {
     const room = getRoom(session.roomCode);
     if (!room) return;
 
-    const currentChallenger = getCurrentChallenger(room);
-    if (playerId !== currentChallenger) return;
-
-    advanceChallenger(room);
-    io.to(room.code).emit('challenge-turn-changed', {
-      currentChallenger: getCurrentChallenger(room),
-      challengePhaseOver: isChallengePhaseOver(room),
-      room: serializeRoom(room),
-    });
-  });
-
-  socket.on('vote-challenge', ({ challengeId, accept }: { challengeId: string; accept: boolean }) => {
-    const playerId = getPlayerId(socket.id);
-    if (!playerId) return;
-    const session = playerSessions.get(playerId);
-    if (!session) return;
-    const room = getRoom(session.roomCode);
-    if (!room) return;
-
+    const challengeId = `${targetPlayerId}-${category}`;
     const challenge = voteChallenge(room, challengeId, playerId, accept);
     if (!challenge) return;
 
     if (challenge.resolved) {
-      const lastResult = room.roundResults[room.roundResults.length - 1];
-      // Auto-advance if current challenger has no more answers to challenge
-      const currentChallenger = getCurrentChallenger(room);
-      if (currentChallenger && !hasRemainingChallenges(room, currentChallenger)) {
-        advanceChallenger(room);
+      // Item resolved — if this player's review is done, advance to the next.
+      if (currentReviewComplete(room)) {
+        advanceToNextActionablePlayer(room);
       }
+      const lastResult = room.roundResults[room.roundResults.length - 1];
       io.to(room.code).emit('challenge-resolved', {
         challenge: serializeChallenge(challenge),
         result: lastResult,
         room: serializeRoom(room),
       });
     } else {
+      const tally = challengeTally(room, challenge);
       io.to(room.code).emit('challenge-voted', {
         challengeId: challenge.id,
-        voterId: playerId,
-        voteCount: challenge.votes.size,
-        totalPlayers: room.players.size,
+        yes: tally.yes,
+        no: tally.no,
+        eligible: tally.eligible,
       });
     }
+  });
+
+  // Host-only deadlock escape: force-reject the on-stage player's remaining
+  // items and move to the next player.
+  socket.on('skip-player-review', () => {
+    const playerId = getPlayerId(socket.id);
+    if (!playerId) return;
+    const session = playerSessions.get(playerId);
+    if (!session) return;
+    const room = getRoom(session.roomCode);
+    if (!room || room.hostId !== playerId) return;
+
+    const forced = forceResolveCurrent(room);
+    advanceToNextActionablePlayer(room);
+    const lastResult = room.roundResults[room.roundResults.length - 1];
+    for (const challenge of forced) {
+      io.to(room.code).emit('challenge-resolved', {
+        challenge: serializeChallenge(challenge),
+        result: lastResult,
+        room: serializeRoom(room),
+      });
+    }
+    io.to(room.code).emit('room-updated', serializeRoom(room));
   });
 
   socket.on('play-again', () => {
@@ -368,6 +340,11 @@ io.on('connection', (socket) => {
           result: lastResult,
           room: serializeRoom(room),
         });
+      }
+      // If the departed player was on stage during review, advance the rotation.
+      if (room.phase === 'scoring' || room.phase === 'finished') {
+        advanceToNextActionablePlayer(room);
+        io.to(room.code).emit('room-updated', serializeRoom(room));
       }
       if (room.phase === 'playing' && allPlayersSubmitted(room)) {
         endRound(room);
@@ -407,6 +384,11 @@ io.on('connection', (socket) => {
               result: lastResult,
               room: serializeRoom(room),
             });
+          }
+          // If the departed player was on stage during review, advance the rotation.
+          if (room.phase === 'scoring' || room.phase === 'finished') {
+            advanceToNextActionablePlayer(room);
+            io.to(room.code).emit('room-updated', serializeRoom(room));
           }
           if (room.phase === 'playing' && allPlayersSubmitted(room)) {
             endRound(room);

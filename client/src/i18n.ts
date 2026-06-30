@@ -75,6 +75,15 @@ const translations = {
     accepted: 'Accepted',
     rejected: 'Rejected',
 
+    // Review (one player at a time)
+    reviewingPlayer: 'Reviewing {name}\'s answers',
+    reviewHint: 'Vote on answers our word list didn\'t recognize. The majority decides.',
+    yourAnswersReviewed: 'Your answers are being reviewed by the other players. Please wait.',
+    waitingForJudges: 'Waiting for other players to vote...',
+    youVoted: 'Voted',
+    confirmed: 'Confirmed',
+    skipPlayer: 'Skip player',
+
     // Footer pages
     aboutTitle: 'About Us',
     aboutContent: 'Gradova i Sela is a digital version of the beloved pen-and-paper geography game known across the Balkans. Players compete to fill in categories — countries, cities, rivers, mountains, animals, plants, and names — all starting with a randomly chosen letter. Built with love in Sarajevo.',
@@ -163,6 +172,15 @@ const translations = {
     waitingForVotes: 'Čekamo glasove...',
     accepted: 'Prihvaćeno',
     rejected: 'Odbijeno',
+
+    // Review (one player at a time)
+    reviewingPlayer: 'Pregled odgovora: {name}',
+    reviewHint: 'Glasajte o odgovorima koje naša lista nije prepoznala. Većina odlučuje.',
+    yourAnswersReviewed: 'Ostali igrači pregledavaju vaše odgovore. Sačekajte.',
+    waitingForJudges: 'Čekamo da ostali glasaju...',
+    youVoted: 'Glasano',
+    confirmed: 'Potvrđeno',
+    skipPlayer: 'Preskoči igrača',
 
     // Footer pages
     aboutTitle: 'O Nama',

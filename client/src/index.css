@@ -1488,6 +1488,182 @@ select option {
 }
 
 /* ============================
+   One-at-a-time Review Panel
+   ============================ */
+.review-panel {
+  width: 100%;
+  background: var(--bg-card);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 0 4px var(--gold-light);
+}
+
+.review-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.review-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.review-subtext {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.review-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.review-item.pending {
+  border-color: var(--gold);
+  background: var(--gold-light);
+}
+
+.review-item.empty {
+  opacity: 0.55;
+}
+
+.review-label {
+  flex: 0 0 32%;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.review-answer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-answer-text {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.review-item.resolved.rejected .review-answer-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.review-check {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.review-points {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.review-status {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.vote-buttons,
+.review-waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.vote-tally {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.btn-vote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.btn-vote-accept {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.btn-vote-accept:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.btn-vote-reject {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.btn-vote-reject:hover {
+  background: var(--danger);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.review-waiting-text {
+  font-family: var(--font-serif);
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.review-skip {
+  margin-top: 16px;
+  width: 100%;
+}
+
+/* ============================
    Responsive
    ============================ */
 @media (max-width: 600px) {

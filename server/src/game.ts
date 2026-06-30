@@ -308,63 +308,133 @@ export function isChallengePhaseOver(room: Room): boolean {
   return room.currentChallengerIndex >= room.challengeOrder.length;
 }
 
-export function hasRemainingChallenges(room: Room, playerId: string): boolean {
+// True when the player currently "on stage" has no unresolved answers left
+// to review (or when there's no current challenger at all).
+export function currentReviewComplete(room: Room): boolean {
+  const playerId = getCurrentChallenger(room);
+  if (!playerId) return true;
+  for (const challenge of room.activeChallenges.values()) {
+    if (challenge.playerId === playerId && !challenge.resolved) return false;
+  }
+  return true;
+}
+
+// When a player takes the stage, create one review item (Challenge) per
+// unconfirmed (invalid + non-empty) answer. These hold the live vote tallies.
+// The owner never auto-votes. In an owner-only room the item auto-accepts.
+export function prepareChallengesForCurrent(room: Room): Challenge[] {
+  const created: Challenge[] = [];
+  const playerId = getCurrentChallenger(room);
+  if (!playerId) return created;
   const lastResult = room.roundResults[room.roundResults.length - 1];
-  if (!lastResult) return false;
+  if (!lastResult) return created;
+
   const categories = getActiveCategories(room);
-  return categories.some(cat => {
+  for (const cat of categories) {
     const r = lastResult.answers[playerId]?.[cat];
-    if (!r || r.valid || !r.answer.trim()) return false;
-    if (room.activeChallenges.has(`${playerId}-${cat}`)) return false;
-    return true;
-  });
+    if (!r || r.valid || !r.answer.trim()) continue;
+    const id = `${playerId}-${cat}`;
+    if (room.activeChallenges.has(id)) continue;
+
+    const challenge: Challenge = {
+      id,
+      playerId,
+      category: cat,
+      answer: r.answer,
+      votes: new Map(),
+      resolved: false,
+      accepted: false,
+    };
+    room.activeChallenges.set(id, challenge);
+    // Owner-only room: auto-resolves to accepted (preserves solo testing).
+    resolveChallengeIfReady(room, challenge);
+    created.push(challenge);
+  }
+  return created;
 }
 
-export function createChallenge(room: Room, playerId: string, category: string, answer: string): Challenge | null {
-  if (room.phase !== 'scoring' && room.phase !== 'finished') return null;
-
-  const id = `${playerId}-${category}`;
-  if (room.activeChallenges.has(id)) return null;
-
-  const challenge: Challenge = {
-    id,
-    playerId,
-    category,
-    answer,
-    votes: new Map(),
-    resolved: false,
-    accepted: false,
-  };
-
-  // The challenger automatically votes yes
-  challenge.votes.set(playerId, true);
-
-  room.activeChallenges.set(id, challenge);
-  return challenge;
+// Walk forward through challengeOrder, preparing each player's review items,
+// stopping at the first player with unresolved items. Solo / all-auto-confirmed
+// rounds walk straight through to challengePhaseOver.
+export function advanceToNextActionablePlayer(room: Room): void {
+  prepareChallengesForCurrent(room);
+  while (!isChallengePhaseOver(room) && currentReviewComplete(room)) {
+    advanceChallenger(room);
+    prepareChallengesForCurrent(room);
+  }
 }
 
+// Eligible voters = everyone except the answer's owner. Resolve once every
+// eligible (non-owner, still-present) player has voted: accept if yes > no
+// (tie or majority-no keeps the answer rejected). Owner-only room auto-accepts.
+function resolveChallengeIfReady(room: Room, challenge: Challenge): boolean {
+  if (challenge.resolved) return false;
+
+  const validVotes: boolean[] = [];
+  for (const [voterId, vote] of challenge.votes) {
+    if (voterId === challenge.playerId) continue;
+    if (!room.players.has(voterId)) continue;
+    validVotes.push(vote);
+  }
+  const needed = room.players.size - 1;
+
+  if (needed <= 0) {
+    challenge.resolved = true;
+    challenge.accepted = true;
+  } else if (validVotes.length >= needed) {
+    const yes = validVotes.filter(v => v).length;
+    const no = validVotes.length - yes;
+    challenge.resolved = true;
+    challenge.accepted = yes > no;
+  } else {
+    return false;
+  }
+
+  if (challenge.accepted) {
+    if (room.categoryMode === 'original') {
+      addWord(challenge.answer, challenge.category as Category, room.language);
+    }
+    recalculateLastRound(room);
+  }
+  return true;
+}
+
+// Vote counts (excluding the owner) for a single review item, for the client tally.
+export function challengeTally(room: Room, challenge: Challenge): { yes: number; no: number; eligible: number } {
+  let yes = 0;
+  let no = 0;
+  for (const [voterId, vote] of challenge.votes) {
+    if (voterId === challenge.playerId) continue;
+    if (!room.players.has(voterId)) continue;
+    if (vote) yes++; else no++;
+  }
+  return { yes, no, eligible: Math.max(0, room.players.size - 1) };
+}
+
+// Re-evaluate unresolved challenges after the room roster changes (a player
+// left). Drops votes from absent players; if the answer's owner left, the item
+// is moot and rejected. Returns the items that became resolved.
 export function checkStaleChallenges(room: Room): Challenge[] {
   const resolved: Challenge[] = [];
   for (const challenge of room.activeChallenges.values()) {
     if (challenge.resolved) continue;
-    // Count only votes from players still in the room
+
+    // Drop votes from players who left
     const relevantVotes = new Map<string, boolean>();
     for (const [voterId, vote] of challenge.votes) {
-      if (room.players.has(voterId)) {
-        relevantVotes.set(voterId, vote);
-      }
+      if (room.players.has(voterId)) relevantVotes.set(voterId, vote);
     }
     challenge.votes = relevantVotes;
-    if (challenge.votes.size >= room.players.size) {
-      challenge.resolved = true;
-      challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
 
-      if (challenge.accepted) {
-        if (room.categoryMode === 'original') {
-          addWord(challenge.answer, challenge.category as Category, room.language);
-        }
-        recalculateLastRound(room);
-      }
+    // Owner left mid-review: the answer can no longer be defended.
+    if (!room.players.has(challenge.playerId)) {
+      challenge.resolved = true;
+      challenge.accepted = false;
+      resolved.push(challenge);
+      continue;
+    }
+
+    if (resolveChallengeIfReady(room, challenge)) {
       resolved.push(challenge);
     }
   }
@@ -374,25 +444,28 @@ export function checkStaleChallenges(room: Room): Challenge[] {
 export function voteChallenge(room: Room, challengeId: string, voterId: string, accept: boolean): Challenge | null {
   const challenge = room.activeChallenges.get(challengeId);
   if (!challenge || challenge.resolved) return null;
+  if (voterId === challenge.playerId) return null; // owner can't vote on their own answer
+  if (!room.players.has(voterId)) return null;
 
   challenge.votes.set(voterId, accept);
+  resolveChallengeIfReady(room, challenge);
+  return challenge;
+}
 
-  // Check if all current players have voted
-  if (challenge.votes.size >= room.players.size) {
-    challenge.resolved = true;
-    challenge.accepted = Array.from(challenge.votes.values()).every(v => v);
-
-    if (challenge.accepted) {
-      // Add word to word list (only for original categories)
-      if (room.categoryMode === 'original') {
-        addWord(challenge.answer, challenge.category as Category, room.language);
-      }
-      // Recalculate the current round result
-      recalculateLastRound(room);
+// Force-resolve (reject) any unresolved review items for the player currently
+// on stage. Used by the host as a deadlock escape when a judge won't vote.
+export function forceResolveCurrent(room: Room): Challenge[] {
+  const playerId = getCurrentChallenger(room);
+  if (!playerId) return [];
+  const resolved: Challenge[] = [];
+  for (const challenge of room.activeChallenges.values()) {
+    if (challenge.playerId === playerId && !challenge.resolved) {
+      challenge.resolved = true;
+      challenge.accepted = false;
+      resolved.push(challenge);
     }
   }
-
-  return challenge;
+  return resolved;
 }
 
 function recalculateLastRound(room: Room): void {

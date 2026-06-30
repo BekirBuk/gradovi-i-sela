@@ -33,6 +33,14 @@ export interface RoomState {
   customCategories: string[];
   categoryLabels: Record<string, string>;
   categories: string[];
+  currentChallenger?: string | null;
+  challengePhaseOver?: boolean;
+}
+
+export interface VoteTally {
+  yes: number;
+  no: number;
+  eligible: number;
 }
 
 export interface ChallengeState {
@@ -54,8 +62,9 @@ interface GameState {
   totalPlayers: number;
   gameOver: boolean;
   allResults: RoundResult[];
-  activeChallenge: ChallengeState | null;
   resolvedChallenges: ChallengeState[];
+  voteTallies: Record<string, VoteTally>;
+  myVotes: Record<string, boolean>;
   lang: 'en' | 'bs';
   setLang: (lang: 'en' | 'bs') => void;
   theme: 'light' | 'dark';
@@ -71,9 +80,8 @@ interface GameState {
   stopRound: () => void;
   nextRound: () => void;
   playAgain: () => void;
-  challengeAnswer: (playerId: string, category: string) => void;
-  voteChallenge: (challengeId: string, accept: boolean) => void;
-  skipChallenges: () => void;
+  voteAnswer: (targetPlayerId: string, category: string, accept: boolean) => void;
+  skipPlayerReview: () => void;
   myId: string;
 }
 
@@ -109,8 +117,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setTheme(t => t === 'light' ? 'dark' : 'light');
   }, []);
   const [allResults, setAllResults] = useState<RoundResult[]>([]);
-  const [activeChallenge, setActiveChallenge] = useState<ChallengeState | null>(null);
   const [resolvedChallenges, setResolvedChallenges] = useState<ChallengeState[]>([]);
+  const [voteTallies, setVoteTallies] = useState<Record<string, VoteTally>>({});
+  const [myVotes, setMyVotes] = useState<Record<string, boolean>>({});
   const [myId] = useState(() => getPlayerId());
 
   // Attempt to rejoin on connect/reconnect
@@ -160,8 +169,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setRoundResult(null);
         setGameOver(false);
         setAllResults([]);
-        setActiveChallenge(null);
         setResolvedChallenges([]);
+        setVoteTallies({});
+        setMyVotes({});
       }
     });
 
@@ -173,8 +183,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setTotalPlayers(data.room.players.length);
       setTimeLeft(data.duration);
       setGameOver(false);
-      setActiveChallenge(null);
       setResolvedChallenges([]);
+      setVoteTallies({});
+      setMyVotes({});
     });
 
     socket.on('player-submitted', (data: { submittedCount: number; totalPlayers: number }) => {
@@ -200,26 +211,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setRoundStopping(false);
     });
 
-    socket.on('challenge-started', (challenge: ChallengeState) => {
-      setActiveChallenge(challenge);
-    });
-
-    socket.on('challenge-voted', (data: { challengeId: string; voterId: string; voteCount: number; totalPlayers: number }) => {
-      setActiveChallenge(prev => {
-        if (!prev || prev.id !== data.challengeId) return prev;
-        return { ...prev, votes: { ...prev.votes, [data.voterId]: true } };
-      });
+    socket.on('challenge-voted', (data: { challengeId: string; yes: number; no: number; eligible: number }) => {
+      setVoteTallies(prev => ({ ...prev, [data.challengeId]: { yes: data.yes, no: data.no, eligible: data.eligible } }));
     });
 
     socket.on('challenge-resolved', (data: { challenge: ChallengeState; result: RoundResult; room: RoomState }) => {
-      setActiveChallenge(null);
       setResolvedChallenges(prev => [...prev, data.challenge]);
       setRoundResult(data.result);
       setRoom(data.room);
-    });
-
-    socket.on('challenge-turn-changed', (data: { room: RoomState }) => {
-      setRoom(data.room);
+      setVoteTallies(prev => {
+        const next = { ...prev };
+        delete next[data.challenge.id];
+        return next;
+      });
     });
 
     return () => {
@@ -229,10 +233,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('player-unsubmitted');
       socket.off('round-stopping');
       socket.off('round-results');
-      socket.off('challenge-started');
       socket.off('challenge-voted');
       socket.off('challenge-resolved');
-      socket.off('challenge-turn-changed');
     };
   }, [socket]);
 
@@ -287,8 +289,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setRoundResult(null);
     setAllResults([]);
     setGameOver(false);
-    setActiveChallenge(null);
     setResolvedChallenges([]);
+    setVoteTallies({});
+    setMyVotes({});
   }, [socket]);
 
   const updateSettingsFn = useCallback((language: 'en' | 'bs', totalRounds: number, roundTime?: number, gameMode?: 'timer' | 'stop', categoryMode?: 'original' | 'custom', customCategories?: string[]) => {
@@ -323,25 +326,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setAllResults([]);
     setGameOver(false);
     setRoundResult(null);
-    setActiveChallenge(null);
     setResolvedChallenges([]);
+    setVoteTallies({});
+    setMyVotes({});
     socket.emit('play-again');
   }, [socket]);
 
-  const challengeAnswerFn = useCallback((playerIdTarget: string, category: string) => {
-    socket.emit('challenge-answer', { playerIdTarget, category }, (res: { success: boolean; error?: string }) => {
-      if (!res.success) {
-        console.warn('Challenge failed:', res.error);
-      }
-    });
+  const voteAnswerFn = useCallback((targetPlayerId: string, category: string, accept: boolean) => {
+    // Optimistically record my vote so the buttons disable immediately.
+    setMyVotes(prev => ({ ...prev, [`${targetPlayerId}-${category}`]: accept }));
+    socket.emit('vote-challenge', { targetPlayerId, category, accept });
   }, [socket]);
 
-  const voteChallengeFn = useCallback((challengeId: string, accept: boolean) => {
-    socket.emit('vote-challenge', { challengeId, accept });
-  }, [socket]);
-
-  const skipChallengesFn = useCallback(() => {
-    socket.emit('skip-challenges');
+  const skipPlayerReviewFn = useCallback(() => {
+    socket.emit('skip-player-review');
   }, [socket]);
 
   return (
@@ -354,8 +352,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       totalPlayers,
       gameOver,
       allResults,
-      activeChallenge,
       resolvedChallenges,
+      voteTallies,
+      myVotes,
       lang,
       setLang,
       theme,
@@ -371,9 +370,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       stopRound: stopRoundFn,
       nextRound: nextRoundFn,
       playAgain: playAgainFn,
-      challengeAnswer: challengeAnswerFn,
-      voteChallenge: voteChallengeFn,
-      skipChallenges: skipChallengesFn,
+      voteAnswer: voteAnswerFn,
+      skipPlayerReview: skipPlayerReviewFn,
       myId,
     }}>
       {children}
