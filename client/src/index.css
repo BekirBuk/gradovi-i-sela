@@ -1731,3 +1731,65 @@ select option {
     display: flex;
   }
 }
+
+/* ===== Maintenance / game-unavailable screen ===== */
+.maintenance {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--bg);
+  background-image: radial-gradient(var(--topo) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.maintenance-card {
+  width: 100%;
+  max-width: 540px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 2.75rem 2rem;
+  text-align: center;
+}
+
+.maintenance-compass {
+  font-size: 3.25rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+}
+
+.maintenance-title {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 1.9rem;
+  letter-spacing: 0.01em;
+  margin-bottom: 1.75rem;
+}
+
+.maintenance-block {
+  margin: 0 auto;
+  max-width: 420px;
+}
+
+.maintenance-heading {
+  font-family: var(--font-serif);
+  color: var(--text-h);
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.maintenance-text {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.maintenance-divider {
+  width: 64px;
+  height: 1px;
+  margin: 1.5rem auto;
+  background: var(--border-strong);
+}
