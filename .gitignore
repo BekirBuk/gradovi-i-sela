@@ -2,3 +2,11 @@ node_modules
 dist
 .env
 .claude/
+
+# Playwright (test suite kept local-only, not part of this repo)
+/playwright.config.ts
+/tests/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
